@@ -1,0 +1,2946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Little PDF — PDF tools that stay on your device</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F6F5F1;
+    --card: #FFFFFF;
+    --ink: #26241F;
+    --ink-soft: #6E6A62;
+    --ink-faint: #A6A29A;
+    --line: #E4E1D8;
+    --line-strong: #D2CEC2;
+    --accent: #3B3873;
+    --accent-soft: #ECEBF6;
+    --danger: #A6321D;
+    --danger-soft: #F7E9E5;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(38,36,31,0.06), 0 8px 24px rgba(38,36,31,0.05);
+    --input-bg: #FFFDFB;
+  }
+  [data-theme="dark"]{
+    --paper: #161513;
+    --card: #201E1B;
+    --ink: #EDE8DF;
+    --ink-soft: #A39D93;
+    --ink-faint: #66625B;
+    --line: #2E2B26;
+    --line-strong: #444038;
+    --accent: #8E89D6;
+    --accent-soft: #252338;
+    --danger: #E06C53;
+    --danger-soft: #381E19;
+    --shadow: 0 1px 3px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.3);
+    --input-bg: #1B1A18;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height:100vh;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  button, input, select, textarea{ font-family: inherit; }
+  .wrap{
+    width:100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  /* ---------- Home ---------- */
+  .home-header{
+    padding: 48px 0 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .wordmark{
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 38px;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+  }
+  .tagline{
+    margin: 0 0 32px;
+    color: var(--ink-soft);
+    font-size: 15px;
+    max-width: 52ch;
+    line-height:1.55;
+  }
+  .header-actions{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .theme-toggle{
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink-soft);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .theme-toggle:hover{
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: rotate(15deg);
+  }
+  .privacy-badge{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .section-label{
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .home-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+  .tool-card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 16px;
+    text-align:left;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .tool-card:hover{
+    border-color: var(--line-strong);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(38,36,31,0.08);
+  }
+  .tool-card:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tool-icon{
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tool-title{ font-size: 14.5px; font-weight: 600; margin:0; color: var(--ink); }
+  .tool-desc{ font-size: 12.5px; color: var(--ink-soft); margin:0; line-height:1.45; }
+
+  /* ---------- Tool screens ---------- */
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+  .tool-header{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 32px 0 24px;
+  }
+  .back-btn{
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink-soft);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition: border-color 0.12s ease, color 0.12s ease, transform 0.12s ease;
+  }
+  .back-btn:hover{ border-color: var(--accent); color: var(--accent); transform: translateX(-2px); }
+  .back-btn:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tool-header-text h1{
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 26px;
+    margin: 0 0 2px;
+  }
+  .tool-header-text p{ margin:0; font-size: 13.5px; color: var(--ink-soft); }
+
+  /* Dropzone (shared) */
+  .dropzone{
+    border: 1.5px dashed var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--card);
+    min-height: 270px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 40px 24px;
+    cursor:pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .dropzone:hover, .dropzone.drag-over{ border-color: var(--accent); background: var(--accent-soft); }
+  .dropzone:focus-visible{ outline: 2px solid var(--accent); outline-offset: 3px; }
+  .dropzone svg{ color: var(--ink-faint); margin-bottom:16px; }
+  .dropzone.drag-over svg{ color: var(--accent); }
+  .dz-title{ font-size:16px; font-weight:500; margin:0 0 6px; }
+  .dz-sub{ font-size: 13.5px; color: var(--ink-soft); margin:0; }
+  .dz-sub b{ color: var(--ink); font-weight: 500; }
+
+  /* Toolbar row above grids */
+  .toolbar-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 16px;
+    flex-wrap:wrap;
+    gap: 10px;
+  }
+  .toolbar-row h2{ font-size: 13px; font-weight: 600; color: var(--ink-soft); margin:0; }
+  .link-btn{
+    font-size: 13px; color: var(--ink-soft); background:none; border:none; cursor:pointer;
+    padding:4px 2px; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px;
+  }
+  .link-btn:hover{ color: var(--accent); text-decoration-color: var(--accent); }
+  .link-btn.danger:hover{ color: var(--danger); text-decoration-color: var(--danger); }
+  .pill-group{ display:flex; gap:6px; flex-wrap:wrap; align-items: center; }
+  .pill-btn{
+    font-size: 12.5px; font-weight:500; color: var(--ink-soft);
+    background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+    padding: 6px 12px; cursor:pointer; transition: all 0.12s ease;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .pill-btn:hover{ border-color: var(--accent); color: var(--accent); }
+  .pill-btn.active{ background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* File / page grid */
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .card{
+    position:relative;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+  }
+  .card.draggable{ cursor:grab; }
+  .card.draggable:active{ cursor:grabbing; }
+  .card.dragging{ opacity: 0.35; }
+  .card.drag-over-target{ box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+  .card.selected{ box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+
+  .thumb{
+    position:relative;
+    aspect-ratio: 3/4;
+    background: var(--paper);
+    display:flex; align-items:center; justify-content:center;
+    border-bottom: 1px solid var(--line);
+    overflow:hidden;
+  }
+  .thumb canvas, .thumb img{
+    max-width:100%; max-height:100%; display:block;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    transition: transform 0.15s ease;
+  }
+  .thumb .spinner{
+    width:20px; height:20px; border-radius:50%;
+    border: 2px solid var(--line-strong); border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  .thumb .err-icon{ color: var(--danger); }
+
+  .order-badge{
+    position:absolute; top:7px; left:7px;
+    width:22px; height:22px; border-radius:50%;
+    background: var(--ink); color:#fff; font-size: 11px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .card-actions-top{
+    position: absolute; top:6px; right:6px;
+    display: flex; gap: 4px; z-index: 5;
+  }
+  .card-action-btn{
+    width:24px; height:24px; border-radius:50%; border:none;
+    background: rgba(38,36,31,0.6); color:#fff;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    opacity:0; transition: opacity 0.12s ease, background 0.12s ease, transform 0.1s ease;
+  }
+  .card:hover .card-action-btn, .card-action-btn:focus-visible{ opacity:1; }
+  .card-action-btn:hover{ background: var(--accent); transform: scale(1.08); }
+  .card-action-btn.danger:hover{ background: var(--danger); }
+  
+  .card-actions-bottom{
+    position: absolute; bottom: 6px; left: 6px; right: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+    pointer-events: none;
+  }
+  .card-actions-bottom > *{ pointer-events: auto; }
+  .card-nav-btns{ display: flex; gap: 3px; }
+
+  .check-overlay{
+    position:absolute; top:8px; right:8px;
+    width:22px; height:22px; border-radius:6px;
+    border: 1.5px solid rgba(255,255,255,0.85);
+    background: rgba(38,36,31,0.4);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color: transparent;
+  }
+  .card.selected .check-overlay{ background: var(--accent); border-color: var(--accent); color:#fff; }
+
+  .card-meta{ padding: 8px 10px 10px; }
+  .card-name{
+    font-size: 12.5px; font-weight:500; color: var(--ink);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0 0 2px;
+  }
+  .card-sub{ font-size: 11px; color: var(--ink-soft); margin:0; }
+  .card-sub.err{ color: var(--danger); }
+
+  .add-tile{
+    aspect-ratio: 3/4.35;
+    border: 1.5px dashed var(--line-strong); border-radius: var(--radius);
+    background: transparent; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    cursor:pointer; color: var(--ink-soft); transition: all 0.15s ease;
+  }
+  .add-tile:hover{ border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .add-tile:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  .add-tile span{ font-size: 12px; font-weight:500; }
+
+  /* Single-file summary card (page numbers / watermark / pdf2text) */
+  .file-summary{
+    display:flex; align-items:center; gap:14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px; margin-bottom: 24px;
+  }
+  .file-summary .icon{
+    width:44px; height:44px; border-radius: 8px; background: var(--accent-soft); color: var(--accent);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .file-summary .fname{ font-size: 14px; font-weight:500; margin:0 0 2px; word-break: break-word; }
+  .file-summary .fsub{ font-size: 12.5px; color: var(--ink-soft); margin:0; }
+  .file-summary .swap-btn{
+    margin-left:auto; font-size:12.5px; color: var(--ink-soft); background:none; border:1px solid var(--line);
+    border-radius: 8px; padding: 8px 12px; cursor:pointer; flex-shrink:0;
+    transition: all 0.12s ease;
+  }
+  .file-summary .swap-btn:hover{ border-color: var(--accent); color: var(--accent); }
+
+  /* Split layout with Live Interactive Preview */
+  .preview-layout{
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) minmax(280px, 360px);
+    gap: 22px;
+    margin-bottom: 28px;
+    align-items: start;
+  }
+  @media (max-width: 780px){
+    .preview-layout{ grid-template-columns: 1fr; }
+  }
+
+  .options-panel{
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px;
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap: 16px;
+  }
+  .field label{ display:block; font-size: 12.5px; font-weight: 500; color: var(--ink); margin-bottom:7px; }
+  .field select, .field input[type=text], .field input[type=number], .field textarea{
+    width:100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--input-bg); font-size: 13.5px; color: var(--ink);
+    transition: border-color 0.15s ease;
+  }
+  .field select:focus, .field input:focus, .field textarea:focus{ outline: none; border-color: var(--accent); }
+  .field input[type=range]{ width:100%; accent-color: var(--accent); }
+  .field .range-val{ font-size:12px; color: var(--ink-soft); margin-top:4px; }
+  .field .checkbox-label{
+    display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: normal; cursor: pointer;
+  }
+  .field .checkbox-label input[type=checkbox]{
+    width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer;
+  }
+  .color-presets{
+    display: flex; gap: 8px; align-items: center; margin-top: 4px;
+  }
+  .color-swatch{
+    width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent;
+    cursor: pointer; transition: transform 0.12s ease;
+  }
+  .color-swatch:hover{ transform: scale(1.15); }
+  .color-swatch.active{ border-color: var(--accent); box-shadow: 0 0 0 2px var(--card); }
+
+  /* Live Preview Canvas Box */
+  .preview-box{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: sticky;
+    top: 20px;
+  }
+  .preview-box-header{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .preview-canvas-wrap{
+    width: 100%;
+    background: var(--paper);
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    min-height: 320px;
+  }
+  .preview-canvas-wrap canvas{
+    max-width: 100%;
+    max-height: 420px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    border-radius: 2px;
+    background: #fff;
+  }
+
+  /* Range rows for split */
+  .range-rows{ display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .range-row{ display:flex; align-items:center; gap:8px; }
+  .range-row span{ font-size: 12.5px; color: var(--ink-soft); }
+  .range-row input{
+    width: 68px; padding: 8px 9px; border-radius: 8px; border: 1px solid var(--line);
+    font-size: 13.5px; text-align:center; background: var(--input-bg); color: var(--ink);
+  }
+  .range-row input:focus{ outline:none; border-color: var(--accent); }
+  .range-row .remove-range{
+    width:26px; height:26px; border-radius:50%; border:1px solid var(--line); background: var(--card);
+    color: var(--ink-soft); cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .range-row .remove-range:hover{ border-color: var(--danger); color: var(--danger); }
+  .add-range-btn{
+    font-size: 12.5px; font-weight:500; color: var(--accent); background: var(--accent-soft);
+    border: none; border-radius: 8px; padding: 8px 14px; cursor:pointer; transition: opacity 0.12s ease;
+  }
+  .add-range-btn:hover{ opacity:0.85; }
+
+  /* PDF to Text rich viewer */
+  .text-viewer-card{
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden; margin-bottom: 28px;
+  }
+  .text-viewer-toolbar{
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--paper); flex-wrap: wrap;
+  }
+  .text-stats{ font-size: 12.5px; color: var(--ink-soft); }
+  .text-stats b{ color: var(--ink); }
+  .text-actions{ display: flex; gap: 8px; align-items: center; }
+  .search-input{
+    padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line);
+    font-size: 12.5px; background: var(--card); color: var(--ink); width: 170px;
+  }
+  .search-input:focus{ outline: none; border-color: var(--accent); }
+  .text-viewer-body{
+    padding: 20px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px; line-height: 1.6; max-height: 480px; overflow-y: auto; white-space: pre-wrap;
+    color: var(--ink);
+  }
+  .text-page-divider{
+    display: block; padding: 6px 0; margin: 16px 0 8px; border-bottom: 1px dashed var(--line-strong);
+    color: var(--accent); font-weight: 600; font-family: 'Inter', sans-serif; font-size: 12px;
+  }
+
+  /* Universal Zoom Modal */
+  .modal-backdrop{
+    position: fixed; inset: 0; background: rgba(18,17,15,0.75); backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-backdrop.open{ display: flex; }
+  .modal-window{
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.3); max-width: 900px; width: 100%; max-height: 92vh;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .modal-header{
+    display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-title{ font-size: 14px; font-weight: 600; color: var(--ink); margin: 0; }
+  .modal-close-btn{
+    width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: transparent;
+    color: var(--ink-soft); display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .modal-close-btn:hover{ color: var(--danger); border-color: var(--danger); }
+  .modal-body{
+    flex: 1; overflow: auto; padding: 24px; display: flex; justify-content: center; align-items: center;
+    background: var(--paper); min-height: 400px;
+  }
+  .modal-body canvas{
+    max-width: 100%; max-height: 74vh; box-shadow: 0 8px 30px rgba(0,0,0,0.15); background: #fff;
+  }
+  .modal-footer{
+    display: flex; justify-content: space-between; align-items: center; padding: 12px 20px;
+    border-top: 1px solid var(--line); background: var(--card);
+  }
+
+  /* Signature canvas & tools */
+  .sig-tabs{ display: flex; gap: 8px; margin-bottom: 14px; }
+  .sig-tab{
+    padding: 7px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--card);
+    font-size: 13px; font-weight: 500; color: var(--ink-soft); cursor: pointer;
+  }
+  .sig-tab.active{ background: var(--accent); color: #fff; border-color: var(--accent); }
+  .sig-canvas-wrap{
+    border: 1.5px dashed var(--line-strong); border-radius: 8px; background: #FFFDFB;
+    position: relative; margin-bottom: 12px; touch-action: none;
+  }
+  [data-theme="dark"] .sig-canvas-wrap{ background: #262422; }
+  .sig-canvas-wrap canvas{ display: block; width: 100%; height: 160px; cursor: crosshair; }
+  .sig-tools-row{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .type-sig-input{
+    font-family: 'Caveat', cursive; font-size: 32px; padding: 12px; height: 120px;
+    text-align: center; color: #162447; width: 100%; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--input-bg); margin-bottom: 14px;
+  }
+
+  /* Footer / action bar */
+  .action-bar{
+    position: sticky; bottom:0;
+    background: linear-gradient(to top, var(--paper) 60%, rgba(246,245,241,0));
+    padding: 18px 0 8px; margin-top: 8px; z-index: 20;
+  }
+  [data-theme="dark"] .action-bar{
+    background: linear-gradient(to top, var(--paper) 60%, rgba(22,21,19,0));
+  }
+  .summary-bar{
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 14px 18px;
+    display:flex; align-items:center; justify-content:space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .summary-text{ font-size: 13.5px; color: var(--ink-soft); margin: 0; }
+  .summary-text b{ color: var(--ink); font-weight:600; }
+  .primary-btn{
+    background: var(--ink); color:#fff; border:none; border-radius: 8px;
+    padding: 11px 20px; font-size: 14px; font-weight: 500; cursor:pointer;
+    display:flex; align-items:center; gap:9px; transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .primary-btn:hover:not(:disabled){ background: var(--accent); }
+  .primary-btn:active:not(:disabled){ transform: scale(0.98); }
+  .primary-btn:disabled{ background: var(--ink-faint); cursor: not-allowed; }
+  .primary-btn:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  .primary-btn .spinner{
+    width:14px; height:14px; border-radius:50%;
+    border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff;
+    animation: spin 0.7s linear infinite;
+  }
+
+  .toast{
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px);
+    background: var(--ink); color:#fff; padding: 11px 18px; border-radius: 8px; font-size: 13.5px;
+    box-shadow: var(--shadow); opacity:0; pointer-events:none; transition: opacity 0.2s ease, transform 0.2s ease; z-index: 200;
+    max-width: 90vw; text-align:center;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); pointer-events:auto; }
+
+  input[type=file]{ display:none; }
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+
+<!-- ============ HOME ============ -->
+<div class="screen active" id="screen-home">
+  <div class="wrap">
+    <div class="home-header">
+      <div>
+        <p class="wordmark">Little PDF</p>
+        <p class="tagline">PDF tools that run entirely in your browser. Files never touch a remote server.</p>
+      </div>
+      <div class="header-actions">
+        <span class="privacy-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          100% Private
+        </span>
+        <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+          <svg id="theme-icon-sun" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg id="theme-icon-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <p class="section-label">Organize &amp; Edit</p>
+    <div class="home-grid">
+      <button class="tool-card" data-tool="merge">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="12" height="15" rx="1.5"/><path d="M9 3h9a1.5 1.5 0 0 1 1.5 1.5V17"/></svg></div>
+        <p class="tool-title">Merge PDFs</p>
+        <p class="tool-desc">Combine several PDFs into one, in any order you like.</p>
+      </button>
+      <button class="tool-card" data-tool="organize">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="9" rx="1"/><rect x="13" y="4" width="7" height="5" rx="1"/><rect x="13" y="11" width="7" height="9" rx="1"/><rect x="4" y="15" width="7" height="5" rx="1"/></svg></div>
+        <p class="tool-title">Organize pages</p>
+        <p class="tool-desc">Reorder, rotate, duplicate, or remove pages within one PDF.</p>
+      </button>
+      <button class="tool-card" data-tool="extract">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <p class="tool-title">Extract pages</p>
+        <p class="tool-desc">Pick pages manually or by range to save as a new PDF.</p>
+      </button>
+      <button class="tool-card" data-tool="split">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="8" height="16" rx="1.3"/><rect x="13" y="4" width="8" height="16" rx="1.3" stroke-dasharray="3 3"/></svg></div>
+        <p class="tool-title">Split PDF</p>
+        <p class="tool-desc">Break one PDF into several files by custom page ranges.</p>
+      </button>
+      <button class="tool-card" data-tool="sign">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 6l2 2"/><path d="M21 16c-.5 2-2 3.5-4 3.5s-3-1-4-1"/></svg></div>
+        <p class="tool-title">Sign PDF</p>
+        <p class="tool-desc">Draw, type, or upload an electronic signature and stamp it.</p>
+      </button>
+      <button class="tool-card" data-tool="pagenumbers">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1.5"/><text x="12" y="17" font-size="7" text-anchor="middle" fill="currentColor" stroke="none">1</text></svg></div>
+        <p class="tool-title">Add page numbers</p>
+        <p class="tool-desc">Stamp page numbers with real-time visual positioning.</p>
+      </button>
+      <button class="tool-card" data-tool="watermark">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 16 16 8" stroke-dasharray="2.5 2.5"/></svg></div>
+        <p class="tool-title">Watermark</p>
+        <p class="tool-desc">Stamp text across pages with live interactive preview.</p>
+      </button>
+      <button class="tool-card" data-tool="metadata">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+        <p class="tool-title">PDF Metadata &amp; Privacy</p>
+        <p class="tool-desc">View, edit, or sanitize &amp; strip all hidden metadata.</p>
+      </button>
+    </div>
+
+    <p class="section-label">Convert</p>
+    <div class="home-grid">
+      <button class="tool-card" data-tool="pdf2img">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="14" rx="1.5"/><circle cx="8" cy="9" r="1.4" fill="currentColor" stroke="none"/><path d="m5 16 4.5-4.5L13 15l3-3 3 3"/></svg></div>
+        <p class="tool-title">PDF to images</p>
+        <p class="tool-desc">Export pages as high-resolution PNG, JPG, or WebP.</p>
+      </button>
+      <button class="tool-card" data-tool="img2pdf">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="12" height="14" rx="1.3"/><path d="M9 3.5h9a1.3 1.3 0 0 1 1.3 1.3V16"/></svg></div>
+        <p class="tool-title">Images to PDF</p>
+        <p class="tool-desc">Combine JPG, PNG, or WebP with standard page sizes.</p>
+      </button>
+      <button class="tool-card" data-tool="pdf2text">
+        <div class="tool-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1.5"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></div>
+        <p class="tool-title">PDF to text</p>
+        <p class="tool-desc">Extract readable text with instant in-browser preview &amp; copy.</p>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MERGE ============ -->
+<div class="screen" id="screen-merge">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>Merge PDFs</h1><p>Add files, reorder, then combine into a single PDF.</p></div>
+    </div>
+    <div id="merge-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop PDFs here</p><p class="dz-sub">or <b>click to browse</b></p>
+    </div>
+    <div id="merge-grid-wrap" class="hidden">
+      <div class="toolbar-row">
+        <h2 id="merge-count">0 files</h2>
+        <div class="pill-group">
+          <button class="pill-btn" id="merge-sort-az">Sort A&rarr;Z</button>
+          <button class="pill-btn" id="merge-sort-za">Sort Z&rarr;A</button>
+          <button class="pill-btn" id="merge-sort-size">By size</button>
+          <button class="pill-btn" id="merge-reverse">Reverse</button>
+          <button class="link-btn danger" id="merge-clear">Remove all</button>
+        </div>
+      </div>
+      <div class="grid" id="merge-grid"></div>
+    </div>
+    <input type="file" id="merge-input" accept="application/pdf,.pdf" multiple>
+  </div>
+  <div class="action-bar hidden" id="merge-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text"><b id="merge-pages">0</b> pages &middot; <b id="merge-size">0 KB</b> total</p>
+      <button class="primary-btn" id="merge-btn"><span id="merge-btn-label">Merge &amp; download</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ ORGANIZE ============ -->
+<div class="screen" id="screen-organize">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>Organize pages</h1><p>Drag or use arrows to reorder, rotate, duplicate, or remove pages.</p></div>
+    </div>
+    <div id="organize-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop a PDF here</p><p class="dz-sub">or <b>click to browse</b></p>
+    </div>
+    <div id="organize-grid-wrap" class="hidden">
+      <div class="toolbar-row">
+        <h2 id="organize-count">0 pages</h2>
+        <div class="pill-group">
+          <button class="pill-btn" id="organize-rotate-cw">Rotate all 90&deg; CW</button>
+          <button class="pill-btn" id="organize-rotate-ccw">Rotate all 90&deg; CCW</button>
+          <button class="pill-btn" id="organize-reverse">Reverse order</button>
+          <button class="pill-btn" id="organize-swap">Use different file</button>
+        </div>
+      </div>
+      <div class="grid" id="organize-grid"></div>
+    </div>
+    <input type="file" id="organize-input" accept="application/pdf,.pdf">
+  </div>
+  <div class="action-bar hidden" id="organize-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text"><b id="organize-remaining">0</b> pages in the new file</p>
+      <button class="primary-btn" id="organize-btn"><span id="organize-btn-label">Save &amp; download</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ EXTRACT ============ -->
+<div class="screen" id="screen-extract">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>Extract pages</h1><p>Select the pages you want and export as a new PDF.</p></div>
+    </div>
+    <div id="extract-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop a PDF here</p><p class="dz-sub">or <b>click to browse</b></p>
+    </div>
+    <div id="extract-grid-wrap" class="hidden">
+      <div class="toolbar-row">
+        <h2 id="extract-count">0 of 0 selected</h2>
+        <div class="pill-group">
+          <input type="text" id="extract-range-input" placeholder="e.g. 1-3, 5, 8" style="padding: 5px 9px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; background: var(--card); color: var(--ink); width: 130px;">
+          <button class="pill-btn" id="extract-apply-range">Apply range</button>
+          <button class="pill-btn" id="extract-odd">Odd pages</button>
+          <button class="pill-btn" id="extract-even">Even pages</button>
+          <button class="pill-btn" id="extract-all">All</button>
+          <button class="pill-btn" id="extract-none">None</button>
+          <button class="pill-btn" id="extract-swap">Different file</button>
+        </div>
+      </div>
+      <div class="grid" id="extract-grid"></div>
+    </div>
+    <input type="file" id="extract-input" accept="application/pdf,.pdf">
+  </div>
+  <div class="action-bar hidden" id="extract-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text"><b id="extract-selected-count">0</b> pages selected</p>
+      <button class="primary-btn" id="extract-btn"><span id="extract-btn-label">Extract &amp; download</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ SPLIT ============ -->
+<div class="screen" id="screen-split">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>Split PDF</h1><p>Define page ranges to break into separate files.</p></div>
+    </div>
+    <div id="split-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop a PDF here</p><p class="dz-sub">or <b>click to browse</b></p>
+    </div>
+    <div id="split-body" class="hidden">
+      <div class="toolbar-row">
+        <h2 id="split-count">0 pages</h2>
+        <button class="pill-btn" id="split-swap">Use a different file</button>
+      </div>
+      <div class="grid" id="split-grid" style="margin-bottom:24px;"></div>
+      <div class="toolbar-row"><h2>Ranges</h2>
+        <div class="pill-group">
+          <button class="pill-btn" id="split-each">Split into single pages</button>
+          <button class="pill-btn" id="split-every-2">Split every 2 pages</button>
+        </div>
+      </div>
+      <div class="range-rows" id="split-ranges"></div>
+      <button class="add-range-btn" id="split-add-range">+ Add range</button>
+    </div>
+    <input type="file" id="split-input" accept="application/pdf,.pdf">
+  </div>
+  <div class="action-bar hidden" id="split-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text"><b id="split-file-count">0</b> files will be created</p>
+      <button class="primary-btn" id="split-btn"><span id="split-btn-label">Split &amp; download</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ SIGN PDF ============ -->
+<div class="screen" id="screen-sign">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>Sign PDF</h1><p>Create your signature and stamp it onto any page.</p></div>
+    </div>
+    <div id="sign-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop a PDF to sign</p><p class="dz-sub">or <b>click to browse</b></p>
+    </div>
+    <div id="sign-body" class="hidden">
+      <div class="file-summary">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/></svg></div>
+        <div><p class="fname" id="sign-fname"></p><p class="fsub" id="sign-fsub"></p></div>
+        <button class="swap-btn" id="sign-swap">Use a different file</button>
+      </div>
+      <div class="preview-layout">
+        <div>
+          <div class="options-panel" style="margin-bottom:16px;">
+            <div class="field" style="grid-column: 1/-1;">
+              <label>Target Page</label>
+              <select id="sign-page-select"></select>
+            </div>
+            <div class="field" style="grid-column: 1/-1;">
+              <label>Signature Mode</label>
+              <div class="sig-tabs">
+                <button type="button" class="sig-tab active" data-sigmode="draw">Draw</button>
+                <button type="button" class="sig-tab" data-sigmode="type">Type</button>
+                <button type="button" class="sig-tab" data-sigmode="upload">Upload</button>
+              </div>
+            </div>
+            <!-- Draw mode -->
+            <div id="sig-mode-draw" class="field" style="grid-column: 1/-1;">
+              <div class="sig-canvas-wrap">
+                <canvas id="sig-draw-canvas" width="400" height="160"></canvas>
+              </div>
+              <div class="sig-tools-row">
+                <div class="color-presets">
+                  <div class="color-swatch active" data-sigcolor="#1A1918" style="background:#1A1918;" title="Black"></div>
+                  <div class="color-swatch" data-sigcolor="#1C3879" style="background:#1C3879;" title="Navy Blue"></div>
+                </div>
+                <button type="button" class="link-btn danger" id="sig-draw-clear">Clear pad</button>
+              </div>
+            </div>
+            <!-- Type mode -->
+            <div id="sig-mode-type" class="field hidden" style="grid-column: 1/-1;">
+              <input type="text" id="sig-type-input" class="type-sig-input" placeholder="Your Name" value="Jane Doe" maxlength="40">
+            </div>
+            <!-- Upload mode -->
+            <div id="sig-mode-upload" class="field hidden" style="grid-column: 1/-1;">
+              <button type="button" class="pill-btn" id="sig-upload-btn" style="width:100%; justify-content:center; padding:12px;">Choose signature image (PNG)</button>
+              <input type="file" id="sig-file-input" accept="image/png,image/jpeg,image/webp">
+            </div>
+            <div class="field">
+              <label>Signature Size</label>
+              <input type="range" id="sig-size-slider" min="15" max="70" value="30">
+              <p class="range-val"><span id="sig-size-val">30</span>% width</p>
+            </div>
+            <div class="field">
+              <label>Placement</label>
+              <select id="sig-preset-pos">
+                <option value="custom" selected>Click page preview to place</option>
+                <option value="bottom-right">Bottom right</option>
+                <option value="bottom-left">Bottom left</option>
+                <option value="bottom-center">Bottom center</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="preview-box">
+          <div class="preview-box-header">
+            <span>Click on the page to place signature</span>
+          </div>
+          <div class="preview-canvas-wrap" style="position:relative; cursor:crosshair;">
+            <canvas id="sign-preview-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="sign-input" accept="application/pdf,.pdf">
+  </div>
+  <div class="action-bar hidden" id="sign-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text">Ready to stamp signature onto page</p>
+      <button class="primary-btn" id="sign-download-btn"><span id="sign-btn-label">Apply signature &amp; download</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ PAGE NUMBERS ============ -->
+<div class="screen" id="screen-pagenumbers">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>Add page numbers</h1><p>Stamp page numbers with live interactive placement preview.</p></div>
+    </div>
+    <div id="pagenumbers-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop a PDF here</p><p class="dz-sub">or <b>click to browse</b></p>
+    </div>
+    <div id="pagenumbers-body" class="hidden">
+      <div class="file-summary">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1.5"/></svg></div>
+        <div><p class="fname" id="pagenumbers-fname"></p><p class="fsub" id="pagenumbers-fsub"></p></div>
+        <button class="swap-btn" id="pagenumbers-swap">Use a different file</button>
+      </div>
+      <div class="preview-layout">
+        <div class="options-panel">
+          <div class="field"><label>Position</label>
+            <select id="pn-position">
+              <option value="bottom-center" selected>Bottom center</option>
+              <option value="bottom-right">Bottom right</option>
+              <option value="bottom-left">Bottom left</option>
+              <option value="top-center">Top center</option>
+              <option value="top-right">Top right</option>
+              <option value="top-left">Top left</option>
+            </select>
+          </div>
+          <div class="field"><label>Format</label>
+            <select id="pn-format">
+              <option value="n" selected>1, 2, 3</option>
+              <option value="n-of-total">1 of 12</option>
+              <option value="page-n">Page 1</option>
+              <option value="page-n-of-total">Page 1 of 12</option>
+              <option value="roman">i, ii, iii (Roman)</option>
+            </select>
+          </div>
+          <div class="field"><label>Font</label>
+            <select id="pn-font">
+              <option value="Helvetica" selected>Helvetica</option>
+              <option value="TimesRoman">Times New Roman</option>
+              <option value="Courier">Courier</option>
+            </select>
+          </div>
+          <div class="field"><label>Size</label>
+            <input type="range" id="pn-size" min="8" max="18" value="10">
+            <p class="range-val"><span id="pn-size-val">10</span>pt</p>
+          </div>
+          <div class="field"><label>Start at</label>
+            <input type="number" id="pn-start" value="1" min="1">
+          </div>
+          <div class="field" style="grid-column: 1/-1;">
+            <label class="checkbox-label">
+              <input type="checkbox" id="pn-skip-first">
+              <span>Skip first page (e.g. document cover page)</span>
+            </label>
+          </div>
+        </div>
+        <div class="preview-box">
+          <div class="preview-box-header">
+            <span>Live Preview</span>
+            <span id="pn-preview-page-label">Page 1</span>
+          </div>
+          <div class="preview-canvas-wrap">
+            <canvas id="pn-preview-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="pagenumbers-input" accept="application/pdf,.pdf">
+  </div>
+  <div class="action-bar hidden" id="pagenumbers-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text">Ready to stamp page numbers</p>
+      <button class="primary-btn" id="pagenumbers-btn"><span id="pagenumbers-btn-label">Add numbers &amp; download</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ WATERMARK ============ -->
+<div class="screen" id="screen-watermark">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>Watermark</h1><p>Stamp text across every page with live interactive preview.</p></div>
+    </div>
+    <div id="watermark-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop a PDF here</p><p class="dz-sub">or <b>click to browse</b></p>
+    </div>
+    <div id="watermark-body" class="hidden">
+      <div class="file-summary">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1.5"/></svg></div>
+        <div><p class="fname" id="watermark-fname"></p><p class="fsub" id="watermark-fsub"></p></div>
+        <button class="swap-btn" id="watermark-swap">Use a different file</button>
+      </div>
+      <div class="preview-layout">
+        <div class="options-panel">
+          <div class="field" style="grid-column: 1/-1;"><label>Watermark text</label>
+            <input type="text" id="wm-text" value="CONFIDENTIAL" maxlength="60">
+          </div>
+          <div class="field" style="grid-column: 1/-1;"><label>Color</label>
+            <div class="color-presets">
+              <div class="color-swatch active" data-wmcolor="#A6321D" style="background:#A6321D;" title="Red"></div>
+              <div class="color-swatch" data-wmcolor="#26241F" style="background:#26241F;" title="Dark Gray"></div>
+              <div class="color-swatch" data-wmcolor="#3B3873" style="background:#3B3873;" title="Indigo"></div>
+              <div class="color-swatch" data-wmcolor="#6E6A62" style="background:#6E6A62;" title="Muted Gray"></div>
+              <input type="color" id="wm-custom-color" value="#A6321D" style="width:28px; height:28px; border:none; padding:0; background:transparent; cursor:pointer;" title="Custom color">
+            </div>
+          </div>
+          <div class="field"><label>Pattern</label>
+            <select id="wm-pattern">
+              <option value="single" selected>Single Center</option>
+              <option value="tiled">Repeated / Tiled Grid</option>
+            </select>
+          </div>
+          <div class="field"><label>Angle</label>
+            <input type="range" id="wm-angle" min="-90" max="90" value="45">
+            <p class="range-val"><span id="wm-angle-val">45</span>&deg;</p>
+          </div>
+          <div class="field"><label>Opacity</label>
+            <input type="range" id="wm-opacity" min="5" max="80" value="25">
+            <p class="range-val"><span id="wm-opacity-val">25</span>%</p>
+          </div>
+          <div class="field"><label>Size</label>
+            <input type="range" id="wm-size" min="20" max="110" value="54">
+            <p class="range-val"><span id="wm-size-val">54</span>pt</p>
+          </div>
+          <div class="field" style="grid-column: 1/-1;">
+            <label class="checkbox-label">
+              <input type="checkbox" id="wm-skip-first">
+              <span>Skip cover / first page</span>
+            </label>
+          </div>
+        </div>
+        <div class="preview-box">
+          <div class="preview-box-header">
+            <span>Live Preview</span>
+            <span id="wm-preview-page-label">Page 1</span>
+          </div>
+          <div class="preview-canvas-wrap">
+            <canvas id="wm-preview-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="watermark-input" accept="application/pdf,.pdf">
+  </div>
+  <div class="action-bar hidden" id="watermark-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text">Applies to document pages</p>
+      <button class="primary-btn" id="watermark-btn"><span id="watermark-btn-label">Add watermark &amp; download</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ PDF METADATA & PRIVACY ============ -->
+<div class="screen" id="screen-metadata">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>PDF Metadata &amp; Privacy</h1><p>Inspect, update, or completely sanitize hidden document metadata.</p></div>
+    </div>
+    <div id="metadata-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop a PDF here</p><p class="dz-sub">or <b>click to browse</b></p>
+    </div>
+    <div id="metadata-body" class="hidden">
+      <div class="file-summary">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
+        <div><p class="fname" id="metadata-fname"></p><p class="fsub" id="metadata-fsub"></p></div>
+        <button class="swap-btn" id="metadata-swap">Use a different file</button>
+      </div>
+      <div class="options-panel" style="margin-bottom:24px;">
+        <div class="field"><label>Title</label><input type="text" id="meta-title" placeholder="Document title"></div>
+        <div class="field"><label>Author</label><input type="text" id="meta-author" placeholder="Author name"></div>
+        <div class="field"><label>Subject</label><input type="text" id="meta-subject" placeholder="Subject"></div>
+        <div class="field"><label>Keywords</label><input type="text" id="meta-keywords" placeholder="Keywords, comma separated"></div>
+        <div class="field"><label>Creator Application</label><input type="text" id="meta-creator" placeholder="Software creator"></div>
+        <div class="field"><label>Producer</label><input type="text" id="meta-producer" placeholder="PDF Producer"></div>
+      </div>
+      <div style="background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin-bottom: 28px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div>
+          <p style="margin:0 0 4px; font-weight:600; font-size:14px;">Sanitize for Privacy</p>
+          <p style="margin:0; font-size:12.5px; color:var(--ink-soft);">Strip all personal names, software IDs, and metadata tags before sharing.</p>
+        </div>
+        <button type="button" class="pill-btn" id="meta-sanitize-btn" style="color:var(--danger); border-color:var(--danger-soft); background:var(--danger-soft);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Wipe all metadata
+        </button>
+      </div>
+    </div>
+    <input type="file" id="metadata-input" accept="application/pdf,.pdf">
+  </div>
+  <div class="action-bar hidden" id="metadata-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text">Ready to save PDF metadata</p>
+      <button class="primary-btn" id="metadata-btn"><span id="metadata-btn-label">Save &amp; download PDF</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ PDF TO IMAGES ============ -->
+<div class="screen" id="screen-pdf2img">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>PDF to images</h1><p>Choose pages and export as image files.</p></div>
+    </div>
+    <div id="pdf2img-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop a PDF here</p><p class="dz-sub">or <b>click to browse</b></p>
+    </div>
+    <div id="pdf2img-body" class="hidden">
+      <div class="toolbar-row">
+        <h2 id="pdf2img-count">0 of 0 selected</h2>
+        <div class="pill-group">
+          <button class="pill-btn" id="pdf2img-all">Select all</button>
+          <button class="pill-btn" id="pdf2img-none">Select none</button>
+          <button class="pill-btn" id="pdf2img-swap">Different file</button>
+        </div>
+      </div>
+      <div class="grid" id="pdf2img-grid" style="margin-bottom:20px;"></div>
+      <div class="options-panel" style="margin-bottom:0;">
+        <div class="field"><label>Format</label>
+          <select id="pdf2img-format">
+            <option value="image/png" selected>PNG (Lossless)</option>
+            <option value="image/jpeg">JPG (Compact)</option>
+            <option value="image/webp">WebP (Modern)</option>
+          </select>
+        </div>
+        <div class="field"><label>Quality Scale</label>
+          <select id="pdf2img-scale">
+            <option value="1.5">Standard (Web)</option>
+            <option value="2.5" selected>High (Crisp)</option>
+            <option value="4.0">Ultra / Print</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="pdf2img-input" accept="application/pdf,.pdf">
+  </div>
+  <div class="action-bar hidden" id="pdf2img-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text"><b id="pdf2img-selected-count">0</b> images will be created</p>
+      <button class="primary-btn" id="pdf2img-btn"><span id="pdf2img-btn-label">Download images</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ IMAGES TO PDF ============ -->
+<div class="screen" id="screen-img2pdf">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>Images to PDF</h1><p>Add images, arrange order, and convert to a clean PDF.</p></div>
+    </div>
+    <div id="img2pdf-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop images here</p><p class="dz-sub">or <b>click to browse</b> (PNG, JPG, WebP, GIF)</p>
+    </div>
+    <div id="img2pdf-grid-wrap" class="hidden">
+      <div class="toolbar-row">
+        <h2 id="img2pdf-count">0 images</h2>
+        <div class="pill-group">
+          <button class="link-btn danger" id="img2pdf-clear">Remove all</button>
+        </div>
+      </div>
+      <div class="grid" id="img2pdf-grid"></div>
+      <div class="options-panel" style="margin-bottom:0;">
+        <div class="field"><label>Page Size</label>
+          <select id="img2pdf-page-size">
+            <option value="fit" selected>Fit to Image Dimensions</option>
+            <option value="a4">A4 (Standard 210 &times; 297mm)</option>
+            <option value="letter">US Letter (8.5 &times; 11in)</option>
+          </select>
+        </div>
+        <div class="field"><label>Orientation</label>
+          <select id="img2pdf-orientation">
+            <option value="auto" selected>Auto (match image aspect)</option>
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+          </select>
+        </div>
+        <div class="field"><label>Margins</label>
+          <select id="img2pdf-margin">
+            <option value="0" selected>None (Edge to Edge)</option>
+            <option value="24">Small (0.35 in)</option>
+            <option value="48">Standard (0.65 in)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="img2pdf-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+  </div>
+  <div class="action-bar hidden" id="img2pdf-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text"><b id="img2pdf-total">0</b> pages in the new PDF</p>
+      <button class="primary-btn" id="img2pdf-btn"><span id="img2pdf-btn-label">Create PDF</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ PDF TO TEXT ============ -->
+<div class="screen" id="screen-pdf2text">
+  <div class="wrap">
+    <div class="tool-header">
+      <button class="back-btn" data-back>&larr;</button>
+      <div class="tool-header-text"><h1>PDF to text</h1><p>Extract readable text with instant in-browser preview and copy.</p></div>
+    </div>
+    <div id="pdf2text-dropzone" class="dropzone" tabindex="0" role="button">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+      <p class="dz-title">Drop a PDF here</p><p class="dz-sub">or <b>click to browse</b></p>
+    </div>
+    <div id="pdf2text-body" class="hidden">
+      <div class="file-summary">
+        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="1.5"/></svg></div>
+        <div><p class="fname" id="pdf2text-fname"></p><p class="fsub" id="pdf2text-fsub"></p></div>
+        <button class="swap-btn" id="pdf2text-swap">Use a different file</button>
+      </div>
+      <div class="text-viewer-card">
+        <div class="text-viewer-toolbar">
+          <div class="text-stats">
+            <span id="pdf2text-stats">Extracting text…</span>
+          </div>
+          <div class="text-actions">
+            <input type="text" id="pdf2text-search" class="search-input" placeholder="Search text...">
+            <button class="pill-btn" id="pdf2text-copy-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy text
+            </button>
+          </div>
+        </div>
+        <div class="text-viewer-body" id="pdf2text-display"></div>
+      </div>
+    </div>
+    <input type="file" id="pdf2text-input" accept="application/pdf,.pdf">
+  </div>
+  <div class="action-bar hidden" id="pdf2text-footer">
+    <div class="wrap"><div class="summary-bar">
+      <p class="summary-text">Extracted text content</p>
+      <button class="primary-btn" id="pdf2text-btn"><span id="pdf2text-btn-label">Download .txt file</span></button>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ UNIVERSAL PAGE ZOOM MODAL ============ -->
+<div class="modal-backdrop" id="zoom-modal">
+  <div class="modal-window">
+    <div class="modal-header">
+      <p class="modal-title" id="zoom-modal-title">Page Preview</p>
+      <button class="modal-close-btn" id="zoom-modal-close" title="Close (Esc)">&times;</button>
+    </div>
+    <div class="modal-body" id="zoom-modal-body">
+      <canvas id="zoom-modal-canvas"></canvas>
+    </div>
+    <div class="modal-footer">
+      <button class="pill-btn" id="zoom-prev-btn">&larr; Previous page</button>
+      <span style="font-size:12.5px; color:var(--ink-soft);" id="zoom-page-indicator">Page 1 of 1</span>
+      <button class="pill-btn" id="zoom-next-btn">Next page &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const { PDFDocument, degrees, rgb, StandardFonts } = PDFLib;
+
+  /* ---------------- Dark mode support ---------------- */
+  const themeToggle = document.getElementById('theme-toggle');
+  const sunIcon = document.getElementById('theme-icon-sun');
+  const moonIcon = document.getElementById('theme-icon-moon');
+  function setTheme(theme){
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('littlepdf-theme', theme);
+    if (theme === 'dark'){
+      sunIcon.classList.remove('hidden'); moonIcon.classList.add('hidden');
+    } else {
+      sunIcon.classList.add('hidden'); moonIcon.classList.remove('hidden');
+    }
+  }
+  const savedTheme = localStorage.getItem('littlepdf-theme') || localStorage.getItem('folio-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  setTheme(savedTheme);
+  themeToggle.addEventListener('click', ()=>{
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    setTheme(current === 'dark' ? 'light' : 'dark');
+  });
+
+  /* ---------------- Shared helpers ---------------- */
+  const toastEl = document.getElementById('toast');
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=> toastEl.classList.remove('show'), 2800);
+  }
+  function formatSize(bytes){
+    if (!bytes || isNaN(bytes)) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return Math.round(bytes/1024) + ' KB';
+    return (bytes/(1024*1024)).toFixed(1) + ' MB';
+  }
+  function readFileBytes(file){
+    return file.arrayBuffer().then(buf => new Uint8Array(buf));
+  }
+  async function renderThumb(bytes, pageIndex, targetWidth){
+    const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+    const page = await doc.getPage(pageIndex + 1);
+    const viewport = page.getViewport({ scale: 1 });
+    const scale = targetWidth / viewport.width;
+    const scaledViewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = scaledViewport.width;
+    canvas.height = scaledViewport.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: scaledViewport }).promise;
+    return canvas.toDataURL('image/png');
+  }
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 6000);
+  }
+  function baseName(name){ return name.replace(/\.pdf$/i,''); }
+
+  function hexToRgb(hex){
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+    const num = parseInt(hex, 16);
+    return rgb(((num >> 16) & 255)/255, ((num >> 8) & 255)/255, (num & 255)/255);
+  }
+  function toRoman(num){
+    const lookup = { M:1000, CM:900, D:500, CD:400, C:100, XC:90, L:50, XL:40, X:10, IX:9, V:5, IV:4, I:1 };
+    let roman = '';
+    for (let i in lookup){
+      while (num >= lookup[i]){ roman += i; num -= lookup[i]; }
+    }
+    return roman.toLowerCase();
+  }
+
+  /* ---------------- Navigation ---------------- */
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('screen-' + id);
+    if (target) target.classList.add('active');
+    window.scrollTo(0,0);
+  }
+  document.querySelectorAll('.tool-card').forEach(card=>{
+    card.addEventListener('click', ()=> showScreen(card.dataset.tool));
+  });
+  document.querySelectorAll('[data-back]').forEach(btn=>{
+    btn.addEventListener('click', ()=> showScreen('home'));
+  });
+
+  /* ---------------- Generic dropzone wiring ---------------- */
+  function wireDropzone(zoneEl, inputEl, onFiles){
+    zoneEl.addEventListener('click', ()=> inputEl.click());
+    zoneEl.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); inputEl.click(); } });
+    ['dragenter','dragover'].forEach(evt => zoneEl.addEventListener(evt, e=>{ e.preventDefault(); zoneEl.classList.add('drag-over'); }));
+    ['dragleave','drop'].forEach(evt => zoneEl.addEventListener(evt, e=>{ e.preventDefault(); zoneEl.classList.remove('drag-over'); }));
+    zoneEl.addEventListener('drop', e => onFiles(e.dataTransfer.files));
+    inputEl.addEventListener('change', ()=>{ onFiles(inputEl.files); inputEl.value=''; });
+  }
+
+  /* Generic drag-reorder wiring */
+  function wireCardDrag(card, item, items, render){
+    card.addEventListener('dragstart', e=>{
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      window.__dragId = item.id;
+    });
+    card.addEventListener('dragend', ()=>{
+      card.classList.remove('dragging');
+      document.querySelectorAll('.card').forEach(c=>c.classList.remove('drag-over-target'));
+    });
+    card.addEventListener('dragover', e=>{ e.preventDefault(); card.classList.add('drag-over-target'); });
+    card.addEventListener('dragleave', ()=> card.classList.remove('drag-over-target'));
+    card.addEventListener('drop', e=>{
+      e.preventDefault();
+      card.classList.remove('drag-over-target');
+      const dragId = window.__dragId;
+      if (!dragId || dragId === item.id) return;
+      const fromIdx = items.findIndex(i=>i.id===dragId);
+      const toIdx = items.findIndex(i=>i.id===item.id);
+      if (fromIdx < 0 || toIdx < 0) return;
+      const [moved] = items.splice(fromIdx, 1);
+      items.splice(toIdx, 0, moved);
+      render();
+    });
+  }
+
+  /* ---------------- Universal Zoom Modal ---------------- */
+  const zoomModal = document.getElementById('zoom-modal');
+  const zoomCanvas = document.getElementById('zoom-modal-canvas');
+  const zoomTitle = document.getElementById('zoom-modal-title');
+  const zoomIndicator = document.getElementById('zoom-page-indicator');
+  let zoomState = { bytes: null, pageIndex: 0, totalPages: 1, title: '' };
+
+  async function openZoomModal(bytes, pageIndex, totalPages, title){
+    zoomState = { bytes, pageIndex, totalPages, title: title || 'Page Preview' };
+    zoomModal.classList.add('open');
+    await renderZoomPage();
+  }
+  async function renderZoomPage(){
+    zoomTitle.textContent = zoomState.title;
+    zoomIndicator.textContent = 'Page ' + (zoomState.pageIndex + 1) + ' of ' + zoomState.totalPages;
+    document.getElementById('zoom-prev-btn').disabled = zoomState.pageIndex <= 0;
+    document.getElementById('zoom-next-btn').disabled = zoomState.pageIndex >= zoomState.totalPages - 1;
+    try{
+      const doc = await pdfjsLib.getDocument({ data: zoomState.bytes.slice() }).promise;
+      const page = await doc.getPage(zoomState.pageIndex + 1);
+      const viewport = page.getViewport({ scale: 1.5 });
+      zoomCanvas.width = viewport.width;
+      zoomCanvas.height = viewport.height;
+      await page.render({ canvasContext: zoomCanvas.getContext('2d'), viewport }).promise;
+    }catch(err){ console.error(err); }
+  }
+  document.getElementById('zoom-modal-close').addEventListener('click', ()=> zoomModal.classList.remove('open'));
+  zoomModal.addEventListener('click', e=>{ if (e.target === zoomModal) zoomModal.classList.remove('open'); });
+  document.getElementById('zoom-prev-btn').addEventListener('click', ()=>{
+    if (zoomState.pageIndex > 0){ zoomState.pageIndex--; renderZoomPage(); }
+  });
+  document.getElementById('zoom-next-btn').addEventListener('click', ()=>{
+    if (zoomState.pageIndex < zoomState.totalPages - 1){ zoomState.pageIndex++; renderZoomPage(); }
+  });
+  window.addEventListener('keydown', e=>{
+    if (zoomModal.classList.contains('open')){
+      if (e.key === 'Escape') zoomModal.classList.remove('open');
+      if (e.key === 'ArrowLeft' && zoomState.pageIndex > 0){ zoomState.pageIndex--; renderZoomPage(); }
+      if (e.key === 'ArrowRight' && zoomState.pageIndex < zoomState.totalPages - 1){ zoomState.pageIndex++; renderZoomPage(); }
+    }
+  });
+
+  /* =====================================================================
+     1. MERGE
+  ===================================================================== */
+  (function(){
+    let items = []; let idc = 0;
+    const dz = document.getElementById('merge-dropzone');
+    const input = document.getElementById('merge-input');
+    const wrapEl = document.getElementById('merge-grid-wrap');
+    const gridEl = document.getElementById('merge-grid');
+    const footer = document.getElementById('merge-footer');
+    const countEl = document.getElementById('merge-count');
+    const pagesEl = document.getElementById('merge-pages');
+    const sizeEl = document.getElementById('merge-size');
+    const btn = document.getElementById('merge-btn');
+    const btnLabel = document.getElementById('merge-btn-label');
+
+    document.getElementById('merge-clear').addEventListener('click', ()=>{ items=[]; render(); });
+    document.getElementById('merge-sort-az').addEventListener('click', ()=>{ items.sort((a,b)=>a.name.localeCompare(b.name)); render(); });
+    document.getElementById('merge-sort-za').addEventListener('click', ()=>{ items.sort((a,b)=>b.name.localeCompare(a.name)); render(); });
+    document.getElementById('merge-sort-size').addEventListener('click', ()=>{ items.sort((a,b)=>b.size - a.size); render(); });
+    document.getElementById('merge-reverse').addEventListener('click', ()=>{ items.reverse(); render(); });
+
+    wireDropzone(dz, input, handleFiles);
+    function handleFiles(fileList){
+      const files = Array.from(fileList).filter(f => f.type==='application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+      if (files.length===0){ showToast('Only PDF files are supported'); return; }
+      files.forEach(addFile);
+    }
+    async function addFile(file){
+      const id = 'm'+(++idc);
+      const entry = { id, name:file.name, size:file.size, bytes:null, pageCount:null, thumbUrl:null, status:'loading' };
+      items.push(entry); render();
+      try{
+        entry.bytes = await readFileBytes(file);
+        const doc = await PDFDocument.load(entry.bytes.slice(), { ignoreEncryption:true });
+        entry.pageCount = doc.getPageCount();
+        entry.thumbUrl = await renderThumb(entry.bytes, 0, 220);
+        entry.status = 'ready';
+      }catch(err){ console.error(err); entry.status='error'; }
+      render();
+    }
+
+    function render(){
+      const has = items.length>0;
+      wrapEl.classList.toggle('hidden', !has);
+      footer.classList.toggle('hidden', !has);
+      dz.style.display = has ? 'none' : 'flex';
+      countEl.textContent = items.length + (items.length===1?' file':' files');
+      const ready = items.filter(i=>i.status==='ready');
+      pagesEl.textContent = ready.reduce((s,i)=>s+(i.pageCount||0),0);
+      sizeEl.textContent = formatSize(items.reduce((s,i)=>s+i.size,0));
+      btn.disabled = items.some(i=>i.status==='loading') || ready.length===0;
+
+      gridEl.innerHTML = '';
+      items.forEach((item, idx)=>{
+        const card = document.createElement('div');
+        card.className = 'card draggable';
+        card.draggable = item.status!=='loading';
+        const thumb = document.createElement('div'); thumb.className='thumb';
+        if (item.status==='loading') thumb.innerHTML = '<div class="spinner"></div>';
+        else if (item.status==='error') thumb.innerHTML = '<svg class="err-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+        else {
+          const img = document.createElement('img'); img.src = item.thumbUrl; thumb.appendChild(img);
+          const badge = document.createElement('div'); badge.className='order-badge'; badge.textContent = idx+1; thumb.appendChild(badge);
+        }
+        card.appendChild(thumb);
+
+        const actionsTop = document.createElement('div'); actionsTop.className = 'card-actions-top';
+        if (item.status === 'ready'){
+          const zoomBtn = document.createElement('button'); zoomBtn.className = 'card-action-btn'; zoomBtn.title = 'Inspect file';
+          zoomBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+          zoomBtn.addEventListener('click', e=>{ e.stopPropagation(); openZoomModal(item.bytes, 0, item.pageCount, item.name); });
+          actionsTop.appendChild(zoomBtn);
+        }
+        const rm = document.createElement('button'); rm.className='card-action-btn danger'; rm.title = 'Remove';
+        rm.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        rm.addEventListener('click', e=>{ e.stopPropagation(); items = items.filter(i=>i.id!==item.id); render(); });
+        actionsTop.appendChild(rm);
+        card.appendChild(actionsTop);
+
+        const actionsBottom = document.createElement('div'); actionsBottom.className = 'card-actions-bottom';
+        const navBtns = document.createElement('div'); navBtns.className = 'card-nav-btns';
+        if (idx > 0){
+          const leftBtn = document.createElement('button'); leftBtn.className = 'card-action-btn'; leftBtn.title = 'Move left';
+          leftBtn.innerHTML = '&larr;';
+          leftBtn.addEventListener('click', e=>{ e.stopPropagation(); [items[idx-1], items[idx]] = [items[idx], items[idx-1]]; render(); });
+          navBtns.appendChild(leftBtn);
+        }
+        if (idx < items.length - 1){
+          const rightBtn = document.createElement('button'); rightBtn.className = 'card-action-btn'; rightBtn.title = 'Move right';
+          rightBtn.innerHTML = '&rarr;';
+          rightBtn.addEventListener('click', e=>{ e.stopPropagation(); [items[idx+1], items[idx]] = [items[idx], items[idx+1]]; render(); });
+          navBtns.appendChild(rightBtn);
+        }
+        actionsBottom.appendChild(navBtns);
+        card.appendChild(actionsBottom);
+
+        const meta = document.createElement('div'); meta.className='card-meta';
+        const nm = document.createElement('p'); nm.className='card-name'; nm.textContent=item.name; nm.title=item.name; meta.appendChild(nm);
+        const sub = document.createElement('p');
+        if (item.status==='loading'){ sub.className='card-sub'; sub.textContent='Reading…'; }
+        else if (item.status==='error'){ sub.className='card-sub err'; sub.textContent="Couldn't read file"; }
+        else { sub.className='card-sub'; sub.textContent = item.pageCount+(item.pageCount===1?' page · ':' pages · ')+formatSize(item.size); }
+        meta.appendChild(sub); card.appendChild(meta);
+        wireCardDrag(card, item, items, render);
+        gridEl.appendChild(card);
+      });
+
+      const addTile = document.createElement('button'); addTile.className='add-tile'; addTile.type='button';
+      addTile.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Add files</span>';
+      addTile.addEventListener('click', ()=> input.click());
+      gridEl.appendChild(addTile);
+    }
+
+    btn.addEventListener('click', async ()=>{
+      const ready = items.filter(i=>i.status==='ready');
+      if (ready.length===0) return;
+      btn.disabled = true; btnLabel.innerHTML = '<span class="spinner"></span> Merging…';
+      try{
+        const outDoc = await PDFDocument.create();
+        for (const item of ready){
+          const src = await PDFDocument.load(item.bytes.slice(), { ignoreEncryption:true });
+          const pages = await outDoc.copyPages(src, src.getPageIndices());
+          pages.forEach(p=>outDoc.addPage(p));
+        }
+        const bytes = await outDoc.save();
+        downloadBlob(new Blob([bytes],{type:'application/pdf'}), 'merged.pdf');
+        showToast('Merged PDF downloaded');
+      }catch(err){ console.error(err); showToast('Something went wrong while merging'); }
+      finally{ btn.disabled = items.filter(i=>i.status==='ready').length===0; btnLabel.textContent='Merge & download'; }
+    });
+  })();
+
+  /* =====================================================================
+     2. ORGANIZE
+  ===================================================================== */
+  (function(){
+    let pages = []; let sourceBytes = null; let idc=0; let fname = 'organized';
+    const dz = document.getElementById('organize-dropzone');
+    const input = document.getElementById('organize-input');
+    const wrapEl = document.getElementById('organize-grid-wrap');
+    const gridEl = document.getElementById('organize-grid');
+    const footer = document.getElementById('organize-footer');
+    const countEl = document.getElementById('organize-count');
+    const remainingEl = document.getElementById('organize-remaining');
+    const btn = document.getElementById('organize-btn');
+    const btnLabel = document.getElementById('organize-btn-label');
+
+    document.getElementById('organize-swap').addEventListener('click', ()=> input.click());
+    document.getElementById('organize-rotate-cw').addEventListener('click', ()=>{
+      pages.forEach(p=> p.rotation = (p.rotation+90)%360); render();
+    });
+    document.getElementById('organize-rotate-ccw').addEventListener('click', ()=>{
+      pages.forEach(p=> p.rotation = (p.rotation+270)%360); render();
+    });
+    document.getElementById('organize-reverse').addEventListener('click', ()=>{
+      pages.reverse(); render();
+    });
+
+    wireDropzone(dz, input, files=>{
+      const f = Array.from(files).find(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
+      if (!f){ showToast('Only PDF files are supported'); return; }
+      loadFile(f);
+    });
+
+    async function loadFile(file){
+      pages = []; fname = baseName(file.name); render();
+      try{
+        sourceBytes = await readFileBytes(file);
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const count = doc.getPageCount();
+        for (let i=0;i<count;i++){ pages.push({ id:'o'+(++idc), index:i, rotation:0, thumbUrl:null, loading:true }); }
+        render();
+        for (const p of pages){
+          p.thumbUrl = await renderThumb(sourceBytes, p.index, 200);
+          p.loading = false;
+          render();
+        }
+      }catch(err){ console.error(err); showToast("Couldn't read this PDF"); }
+    }
+
+    function render(){
+      const has = pages.length>0;
+      wrapEl.classList.toggle('hidden', !has);
+      footer.classList.toggle('hidden', !has);
+      dz.style.display = has ? 'none' : 'flex';
+      countEl.textContent = pages.length + (pages.length===1?' page':' pages');
+      remainingEl.textContent = pages.length;
+      btn.disabled = pages.length===0 || pages.some(p=>p.loading);
+
+      gridEl.innerHTML='';
+      pages.forEach((p, idx)=>{
+        const card = document.createElement('div'); card.className='card draggable'; card.draggable = !p.loading;
+        const thumb = document.createElement('div'); thumb.className='thumb';
+        if (p.loading) thumb.innerHTML = '<div class="spinner"></div>';
+        else {
+          const img = document.createElement('img'); img.src=p.thumbUrl; img.style.transform = 'rotate('+p.rotation+'deg)'; thumb.appendChild(img);
+          const badge = document.createElement('div'); badge.className='order-badge'; badge.textContent = idx+1; thumb.appendChild(badge);
+        }
+        card.appendChild(thumb);
+
+        const actionsTop = document.createElement('div'); actionsTop.className = 'card-actions-top';
+        if (!p.loading){
+          const zoomBtn = document.createElement('button'); zoomBtn.className = 'card-action-btn'; zoomBtn.title = 'Inspect page';
+          zoomBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+          zoomBtn.addEventListener('click', e=>{ e.stopPropagation(); openZoomModal(sourceBytes, p.index, pages.length, 'Page ' + (p.index+1)); });
+          actionsTop.appendChild(zoomBtn);
+
+          const dupBtn = document.createElement('button'); dupBtn.className = 'card-action-btn'; dupBtn.title = 'Duplicate page';
+          dupBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+          dupBtn.addEventListener('click', e=>{ e.stopPropagation(); pages.splice(idx+1, 0, { ...p, id:'o'+(++idc) }); render(); });
+          actionsTop.appendChild(dupBtn);
+        }
+        const rm = document.createElement('button'); rm.className='card-action-btn danger'; rm.title = 'Remove page';
+        rm.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        rm.addEventListener('click', e=>{ e.stopPropagation(); pages = pages.filter(x=>x.id!==p.id); render(); });
+        actionsTop.appendChild(rm);
+        card.appendChild(actionsTop);
+
+        const actionsBottom = document.createElement('div'); actionsBottom.className = 'card-actions-bottom';
+        const navBtns = document.createElement('div'); navBtns.className = 'card-nav-btns';
+        if (idx > 0){
+          const leftBtn = document.createElement('button'); leftBtn.className = 'card-action-btn'; leftBtn.title = 'Move left';
+          leftBtn.innerHTML = '&larr;';
+          leftBtn.addEventListener('click', e=>{ e.stopPropagation(); [pages[idx-1], pages[idx]] = [pages[idx], pages[idx-1]]; render(); });
+          navBtns.appendChild(leftBtn);
+        }
+        if (idx < pages.length - 1){
+          const rightBtn = document.createElement('button'); rightBtn.className = 'card-action-btn'; rightBtn.title = 'Move right';
+          rightBtn.innerHTML = '&rarr;';
+          rightBtn.addEventListener('click', e=>{ e.stopPropagation(); [pages[idx+1], pages[idx]] = [pages[idx], pages[idx+1]]; render(); });
+          navBtns.appendChild(rightBtn);
+        }
+        actionsBottom.appendChild(navBtns);
+
+        if (!p.loading){
+          const rotBtn = document.createElement('button'); rotBtn.className='card-action-btn'; rotBtn.title = 'Rotate 90° CW';
+          rotBtn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>';
+          rotBtn.addEventListener('click', e=>{ e.stopPropagation(); p.rotation=(p.rotation+90)%360; render(); });
+          actionsBottom.appendChild(rotBtn);
+        }
+        card.appendChild(actionsBottom);
+
+        const meta = document.createElement('div'); meta.className='card-meta';
+        const sub = document.createElement('p'); sub.className='card-sub'; sub.textContent = 'Original Page '+(p.index+1);
+        meta.appendChild(sub); card.appendChild(meta);
+        if (!p.loading) wireCardDrag(card, p, pages, render);
+        gridEl.appendChild(card);
+      });
+    }
+
+    btn.addEventListener('click', async ()=>{
+      if (pages.length===0) return;
+      btn.disabled=true; btnLabel.innerHTML='<span class="spinner"></span> Saving…';
+      try{
+        const src = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const outDoc = await PDFDocument.create();
+        for (let i=0; i<pages.length; i++){
+          const p = pages[i];
+          const [cp] = await outDoc.copyPages(src, [p.index]);
+          const base = cp.getRotation().angle;
+          cp.setRotation(degrees((base + p.rotation)%360));
+          outDoc.addPage(cp);
+        }
+        const bytes = await outDoc.save();
+        downloadBlob(new Blob([bytes],{type:'application/pdf'}), fname+'_organized.pdf');
+        showToast('PDF saved');
+      }catch(err){ console.error(err); showToast('Something went wrong'); }
+      finally{ btn.disabled=false; btnLabel.textContent='Save & download'; }
+    });
+  })();
+
+  /* =====================================================================
+     3. EXTRACT
+  ===================================================================== */
+  (function(){
+    let pages = []; let sourceBytes=null; let idc=0; let fname = 'extracted';
+    const dz = document.getElementById('extract-dropzone');
+    const input = document.getElementById('extract-input');
+    const wrapEl = document.getElementById('extract-grid-wrap');
+    const gridEl = document.getElementById('extract-grid');
+    const footer = document.getElementById('extract-footer');
+    const countEl = document.getElementById('extract-count');
+    const selCountEl = document.getElementById('extract-selected-count');
+    const btn = document.getElementById('extract-btn');
+    const btnLabel = document.getElementById('extract-btn-label');
+    const rangeInput = document.getElementById('extract-range-input');
+
+    document.getElementById('extract-swap').addEventListener('click', ()=> input.click());
+    document.getElementById('extract-all').addEventListener('click', ()=>{ pages.forEach(p=>p.selected=true); render(); });
+    document.getElementById('extract-none').addEventListener('click', ()=>{ pages.forEach(p=>p.selected=false); render(); });
+    document.getElementById('extract-odd').addEventListener('click', ()=>{ pages.forEach((p,i)=>p.selected = (i%2===0)); render(); });
+    document.getElementById('extract-even').addEventListener('click', ()=>{ pages.forEach((p,i)=>p.selected = (i%2===1)); render(); });
+
+    document.getElementById('extract-apply-range').addEventListener('click', applyRange);
+    rangeInput.addEventListener('keydown', e=>{ if(e.key==='Enter') applyRange(); });
+
+    function applyRange(){
+      const val = rangeInput.value.trim();
+      if (!val) return;
+      const parts = val.split(',').map(s=>s.trim()).filter(Boolean);
+      const toSelect = new Set();
+      parts.forEach(part=>{
+        if (part.includes('-')){
+          const [a, b] = part.split('-').map(x=>parseInt(x.trim(), 10));
+          if (!isNaN(a) && !isNaN(b)){
+            for (let i=Math.min(a,b); i<=Math.max(a,b); i++) toSelect.add(i-1);
+          }
+        } else {
+          const n = parseInt(part, 10);
+          if (!isNaN(n)) toSelect.add(n-1);
+        }
+      });
+      pages.forEach((p, idx)=>{ p.selected = toSelect.has(idx); });
+      render();
+    }
+
+    wireDropzone(dz, input, files=>{
+      const f = Array.from(files).find(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
+      if (!f){ showToast('Only PDF files are supported'); return; }
+      loadFile(f);
+    });
+
+    async function loadFile(file){
+      pages = []; fname = baseName(file.name); render();
+      try{
+        sourceBytes = await readFileBytes(file);
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const count = doc.getPageCount();
+        for (let i=0;i<count;i++){ pages.push({ id:'e'+(++idc), index:i, selected:true, thumbUrl:null, loading:true }); }
+        render();
+        for (const p of pages){ p.thumbUrl = await renderThumb(sourceBytes, p.index, 200); p.loading=false; render(); }
+      }catch(err){ console.error(err); showToast("Couldn't read this PDF"); }
+    }
+
+    function render(){
+      const has = pages.length>0;
+      wrapEl.classList.toggle('hidden', !has);
+      footer.classList.toggle('hidden', !has);
+      dz.style.display = has ? 'none' : 'flex';
+      const selected = pages.filter(p=>p.selected);
+      countEl.textContent = selected.length + ' of ' + pages.length + ' selected';
+      selCountEl.textContent = selected.length;
+      btn.disabled = selected.length===0 || pages.some(p=>p.loading);
+
+      gridEl.innerHTML='';
+      pages.forEach(p=>{
+        const card = document.createElement('div'); card.className='card'+(p.selected?' selected':'');
+        const thumb = document.createElement('div'); thumb.className='thumb';
+        if (p.loading) thumb.innerHTML = '<div class="spinner"></div>';
+        else {
+          const img = document.createElement('img'); img.src=p.thumbUrl; thumb.appendChild(img);
+          const badge = document.createElement('div'); badge.className='order-badge'; badge.textContent = p.index+1; thumb.appendChild(badge);
+          const check = document.createElement('div'); check.className='check-overlay';
+          check.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+          thumb.appendChild(check);
+        }
+        card.appendChild(thumb);
+        card.addEventListener('click', ()=>{ if(!p.loading){ p.selected = !p.selected; render(); } });
+        gridEl.appendChild(card);
+      });
+    }
+
+    btn.addEventListener('click', async ()=>{
+      const selected = pages.filter(p=>p.selected);
+      if (selected.length===0) return;
+      btn.disabled=true; btnLabel.innerHTML='<span class="spinner"></span> Extracting…';
+      try{
+        const src = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const outDoc = await PDFDocument.create();
+        const copied = await outDoc.copyPages(src, selected.map(p=>p.index));
+        copied.forEach(p=>outDoc.addPage(p));
+        const bytes = await outDoc.save();
+        downloadBlob(new Blob([bytes],{type:'application/pdf'}), fname+'_extracted.pdf');
+        showToast('Pages extracted');
+      }catch(err){ console.error(err); showToast('Something went wrong'); }
+      finally{ btn.disabled=false; btnLabel.textContent='Extract & download'; }
+    });
+  })();
+
+  /* =====================================================================
+     4. SPLIT
+  ===================================================================== */
+  (function(){
+    let pages = []; let sourceBytes=null; let fname='split'; let ranges=[];
+    const dz = document.getElementById('split-dropzone');
+    const input = document.getElementById('split-input');
+    const bodyEl = document.getElementById('split-body');
+    const gridEl = document.getElementById('split-grid');
+    const rangesEl = document.getElementById('split-ranges');
+    const footer = document.getElementById('split-footer');
+    const countEl = document.getElementById('split-count');
+    const fileCountEl = document.getElementById('split-file-count');
+    const btn = document.getElementById('split-btn');
+    const btnLabel = document.getElementById('split-btn-label');
+
+    document.getElementById('split-swap').addEventListener('click', ()=> input.click());
+    document.getElementById('split-add-range').addEventListener('click', ()=>{
+      const last = ranges[ranges.length-1];
+      const from = last ? Math.min(last.to+1, pages.length) : 1;
+      ranges.push({ from, to: pages.length });
+      renderRanges();
+    });
+    document.getElementById('split-each').addEventListener('click', ()=>{
+      ranges = pages.map(p=>({from:p.index+1, to:p.index+1}));
+      renderRanges();
+    });
+    document.getElementById('split-every-2').addEventListener('click', ()=>{
+      ranges = [];
+      for (let i=1; i<=pages.length; i+=2){
+        ranges.push({ from: i, to: Math.min(i+1, pages.length) });
+      }
+      renderRanges();
+    });
+
+    wireDropzone(dz, input, files=>{
+      const f = Array.from(files).find(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
+      if (!f){ showToast('Only PDF files are supported'); return; }
+      loadFile(f);
+    });
+
+    async function loadFile(file){
+      pages=[]; ranges=[]; fname = baseName(file.name); render(); renderRanges();
+      try{
+        sourceBytes = await readFileBytes(file);
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const count = doc.getPageCount();
+        for (let i=0;i<count;i++){ pages.push({ index:i, thumbUrl:null, loading:true }); }
+        ranges = [{ from:1, to:count }];
+        render(); renderRanges();
+        for (const p of pages){ p.thumbUrl = await renderThumb(sourceBytes, p.index, 160); p.loading=false; render(); }
+      }catch(err){ console.error(err); showToast("Couldn't read this PDF"); }
+    }
+
+    function render(){
+      const has = pages.length>0;
+      bodyEl.classList.toggle('hidden', !has);
+      footer.classList.toggle('hidden', !has);
+      dz.style.display = has ? 'none' : 'flex';
+      countEl.textContent = pages.length + (pages.length===1?' page':' pages');
+      gridEl.innerHTML='';
+      pages.forEach(p=>{
+        const card = document.createElement('div'); card.className='card';
+        const thumb = document.createElement('div'); thumb.className='thumb';
+        if (p.loading) thumb.innerHTML = '<div class="spinner"></div>';
+        else {
+          const img = document.createElement('img'); img.src=p.thumbUrl; thumb.appendChild(img);
+          const badge = document.createElement('div'); badge.className='order-badge'; badge.textContent = p.index+1; thumb.appendChild(badge);
+        }
+        card.appendChild(thumb);
+        gridEl.appendChild(card);
+      });
+    }
+
+    function renderRanges(){
+      rangesEl.innerHTML='';
+      ranges.forEach((r, i)=>{
+        const row = document.createElement('div'); row.className='range-row';
+        const fromInput = document.createElement('input'); fromInput.type='number'; fromInput.min=1; fromInput.max=pages.length||1; fromInput.value=r.from;
+        const toInput = document.createElement('input'); toInput.type='number'; toInput.min=1; toInput.max=pages.length||1; toInput.value=r.to;
+        fromInput.addEventListener('change', ()=>{ r.from = Math.max(1, Math.min(parseInt(fromInput.value||'1',10), pages.length)); fromInput.value=r.from; updateFooter(); });
+        toInput.addEventListener('change', ()=>{ r.to = Math.max(1, Math.min(parseInt(toInput.value||'1',10), pages.length)); toInput.value=r.to; updateFooter(); });
+        row.appendChild(fromInput);
+        const span = document.createElement('span'); span.textContent='to'; row.appendChild(span);
+        row.appendChild(toInput);
+        if (ranges.length>1){
+          const rm = document.createElement('button'); rm.className='remove-range'; rm.title = 'Remove range';
+          rm.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+          rm.addEventListener('click', ()=>{ ranges.splice(i,1); renderRanges(); });
+          row.appendChild(rm);
+        }
+        rangesEl.appendChild(row);
+      });
+      updateFooter();
+    }
+    function updateFooter(){ fileCountEl.textContent = ranges.length; btn.disabled = ranges.length===0 || pages.some(p=>p.loading); }
+
+    btn.addEventListener('click', async ()=>{
+      if (ranges.length===0) return;
+      btn.disabled=true; btnLabel.innerHTML='<span class="spinner"></span> Splitting…';
+      try{
+        const src = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        if (ranges.length===1){
+          const r = ranges[0];
+          const indices = []; for(let i=r.from-1;i<=r.to-1;i++) indices.push(i);
+          const outDoc = await PDFDocument.create();
+          const copied = await outDoc.copyPages(src, indices);
+          copied.forEach(p=>outDoc.addPage(p));
+          const bytes = await outDoc.save();
+          downloadBlob(new Blob([bytes],{type:'application/pdf'}), fname+'_'+r.from+'-'+r.to+'.pdf');
+        } else {
+          const zip = new JSZip();
+          for (const r of ranges){
+            const indices = []; for(let i=r.from-1;i<=r.to-1;i++) indices.push(i);
+            const outDoc = await PDFDocument.create();
+            const copied = await outDoc.copyPages(src, indices);
+            copied.forEach(p=>outDoc.addPage(p));
+            const bytes = await outDoc.save();
+            zip.file(fname+'_'+r.from+'-'+r.to+'.pdf', bytes);
+          }
+          const blob = await zip.generateAsync({type:'blob'});
+          downloadBlob(blob, fname+'_split.zip');
+        }
+        showToast('Split complete');
+      }catch(err){ console.error(err); showToast('Something went wrong'); }
+      finally{ btn.disabled=false; btnLabel.textContent='Split & download'; }
+    });
+  })();
+
+  /* =====================================================================
+     5. SIGN PDF
+  ===================================================================== */
+  (function(){
+    let sourceBytes = null; let fname = 'signed'; let pageCount = 0;
+    let selectedPageIndex = 0;
+    let sigMode = 'draw';
+    let sigColor = '#1A1918';
+    let sigPos = { xRatio: 0.65, yRatio: 0.8 }; // percentage of page
+    let sigScaleRatio = 0.3; // 30% of page width
+    let currentSigImage = null; // Image element
+
+    const dz = document.getElementById('sign-dropzone');
+    const input = document.getElementById('sign-input');
+    const bodyEl = document.getElementById('sign-body');
+    const footer = document.getElementById('sign-footer');
+    const fnameEl = document.getElementById('sign-fname');
+    const fsubEl = document.getElementById('sign-fsub');
+    const pageSelect = document.getElementById('sign-page-select');
+    const sizeSlider = document.getElementById('sig-size-slider');
+    const sizeVal = document.getElementById('sig-size-val');
+    const presetPos = document.getElementById('sig-preset-pos');
+    const previewCanvas = document.getElementById('sign-preview-canvas');
+    const btn = document.getElementById('sign-download-btn');
+    const btnLabel = document.getElementById('sign-btn-label');
+
+    // Drawing pad
+    const drawCanvas = document.getElementById('sig-draw-canvas');
+    const dCtx = drawCanvas.getContext('2d');
+    let isDrawing = false;
+
+    function initDrawCanvas(){
+      dCtx.lineCap = 'round'; dCtx.lineJoin = 'round';
+      dCtx.lineWidth = 2.5; dCtx.strokeStyle = sigColor;
+    }
+    initDrawCanvas();
+
+    function getCanvasPos(e, c){
+      const rect = c.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: (clientX - rect.left) * (c.width / rect.width),
+        y: (clientY - rect.top) * (c.height / rect.height)
+      };
+    }
+    ['mousedown','touchstart'].forEach(evt => drawCanvas.addEventListener(evt, e=>{
+      e.preventDefault(); isDrawing = true;
+      const pos = getCanvasPos(e, drawCanvas);
+      dCtx.beginPath(); dCtx.moveTo(pos.x, pos.y);
+    }));
+    ['mousemove','touchmove'].forEach(evt => drawCanvas.addEventListener(evt, e=>{
+      if (!isDrawing) return; e.preventDefault();
+      const pos = getCanvasPos(e, drawCanvas);
+      dCtx.lineTo(pos.x, pos.y); dCtx.stroke();
+    }));
+    ['mouseup','touchend','mouseleave'].forEach(evt => drawCanvas.addEventListener(evt, ()=>{
+      if (isDrawing){ isDrawing = false; updateSignatureFromDraw(); }
+    }));
+    document.getElementById('sig-draw-clear').addEventListener('click', ()=>{
+      dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      currentSigImage = null; renderSignPreview();
+    });
+
+    document.querySelectorAll('[data-sigcolor]').forEach(swatch=>{
+      swatch.addEventListener('click', ()=>{
+        document.querySelectorAll('[data-sigcolor]').forEach(s=>s.classList.remove('active'));
+        swatch.classList.add('active');
+        sigColor = swatch.dataset.sigcolor;
+        dCtx.strokeStyle = sigColor;
+        if (sigMode === 'draw') updateSignatureFromDraw();
+        if (sigMode === 'type') updateSignatureFromType();
+      });
+    });
+
+    function updateSignatureFromDraw(){
+      const dataUrl = drawCanvas.toDataURL('image/png');
+      const img = new Image();
+      img.onload = ()=>{ currentSigImage = img; renderSignPreview(); };
+      img.src = dataUrl;
+    }
+
+    // Type mode
+    const typeInput = document.getElementById('sig-type-input');
+    typeInput.addEventListener('input', updateSignatureFromType);
+    function updateSignatureFromType(){
+      const txt = typeInput.value.trim() || 'Jane Doe';
+      const c = document.createElement('canvas'); c.width = 400; c.height = 140;
+      const ctx = c.getContext('2d');
+      ctx.font = '52px Caveat, cursive';
+      ctx.fillStyle = sigColor;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, c.width/2, c.height/2);
+      const img = new Image();
+      img.onload = ()=>{ currentSigImage = img; renderSignPreview(); };
+      img.src = c.toDataURL('image/png');
+    }
+
+    // Upload mode
+    const uploadBtn = document.getElementById('sig-upload-btn');
+    const uploadInput = document.getElementById('sig-file-input');
+    uploadBtn.addEventListener('click', ()=> uploadInput.click());
+    uploadInput.addEventListener('change', ()=>{
+      const file = uploadInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e=>{
+        const img = new Image();
+        img.onload = ()=>{ currentSigImage = img; renderSignPreview(); showToast('Signature loaded'); };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Tab switching
+    document.querySelectorAll('.sig-tab').forEach(tab=>{
+      tab.addEventListener('click', ()=>{
+        document.querySelectorAll('.sig-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        sigMode = tab.dataset.sigmode;
+        document.getElementById('sig-mode-draw').classList.toggle('hidden', sigMode !== 'draw');
+        document.getElementById('sig-mode-type').classList.toggle('hidden', sigMode !== 'type');
+        document.getElementById('sig-mode-upload').classList.toggle('hidden', sigMode !== 'upload');
+        if (sigMode === 'draw') updateSignatureFromDraw();
+        if (sigMode === 'type') updateSignatureFromType();
+      });
+    });
+
+    sizeSlider.addEventListener('input', ()=>{
+      sigScaleRatio = parseInt(sizeSlider.value, 10)/100;
+      sizeVal.textContent = sizeSlider.value;
+      renderSignPreview();
+    });
+
+    presetPos.addEventListener('change', ()=>{
+      if (presetPos.value === 'bottom-right') sigPos = { xRatio: 0.65, yRatio: 0.85 };
+      else if (presetPos.value === 'bottom-left') sigPos = { xRatio: 0.1, yRatio: 0.85 };
+      else if (presetPos.value === 'bottom-center') sigPos = { xRatio: 0.38, yRatio: 0.85 };
+      renderSignPreview();
+    });
+
+    previewCanvas.addEventListener('click', e=>{
+      const rect = previewCanvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left) / rect.width;
+      const clickY = (e.clientY - rect.top) / rect.height;
+      sigPos = { xRatio: Math.max(0.05, Math.min(clickX - (sigScaleRatio/2), 0.9)), yRatio: Math.max(0.05, Math.min(clickY - 0.05, 0.9)) };
+      presetPos.value = 'custom';
+      renderSignPreview();
+    });
+
+    pageSelect.addEventListener('change', ()=>{
+      selectedPageIndex = parseInt(pageSelect.value, 10);
+      renderSignPreview();
+    });
+
+    document.getElementById('sign-swap').addEventListener('click', ()=> input.click());
+
+    wireDropzone(dz, input, files=>{
+      const f = Array.from(files).find(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
+      if (!f){ showToast('Only PDF files are supported'); return; }
+      loadFile(f);
+    });
+
+    async function loadFile(file){
+      try{
+        sourceBytes = await readFileBytes(file);
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        pageCount = doc.getPageCount(); fname = baseName(file.name);
+        fnameEl.textContent = file.name;
+        fsubEl.textContent = pageCount + (pageCount===1?' page · ':' pages · ') + formatSize(file.size);
+        pageSelect.innerHTML = '';
+        for (let i=0; i<pageCount; i++){
+          const opt = document.createElement('option'); opt.value = i; opt.textContent = 'Page ' + (i+1);
+          pageSelect.appendChild(opt);
+        }
+        selectedPageIndex = 0;
+        bodyEl.classList.remove('hidden'); footer.classList.remove('hidden'); dz.style.display='none';
+        btn.disabled=false;
+        updateSignatureFromDraw();
+      }catch(err){ console.error(err); showToast("Couldn't read this PDF"); }
+    }
+
+    async function renderSignPreview(){
+      if (!sourceBytes) return;
+      try{
+        const pdf = await pdfjsLib.getDocument({ data: sourceBytes.slice() }).promise;
+        const page = await pdf.getPage(selectedPageIndex + 1);
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = 280 / viewport.width;
+        const scaledViewport = page.getViewport({ scale });
+        previewCanvas.width = scaledViewport.width;
+        previewCanvas.height = scaledViewport.height;
+        const ctx = previewCanvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+
+        if (currentSigImage){
+          const sigW = previewCanvas.width * sigScaleRatio;
+          const sigH = sigW * (currentSigImage.height / currentSigImage.width);
+          const sigX = previewCanvas.width * sigPos.xRatio;
+          const sigY = previewCanvas.height * sigPos.yRatio;
+
+          // Draw signature box highlight
+          ctx.strokeStyle = '#3B3873'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+          ctx.strokeRect(sigX, sigY, sigW, sigH);
+          ctx.setLineDash([]);
+          ctx.drawImage(currentSigImage, sigX, sigY, sigW, sigH);
+        }
+      }catch(err){ console.error(err); }
+    }
+
+    btn.addEventListener('click', async ()=>{
+      if (!sourceBytes || !currentSigImage) { showToast('Please create a signature first'); return; }
+      btn.disabled=true; btnLabel.innerHTML='<span class="spinner"></span> Stamping…';
+      try{
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const pages = doc.getPages();
+        const page = pages[selectedPageIndex];
+        const { width: pWidth, height: pHeight } = page.getSize();
+
+        // Convert currentSigImage to png bytes
+        const c = document.createElement('canvas');
+        c.width = currentSigImage.naturalWidth || currentSigImage.width || 400;
+        c.height = currentSigImage.naturalHeight || currentSigImage.height || 160;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(currentSigImage, 0, 0);
+        const dataUrl = c.toDataURL('image/png');
+        const sigPngBytes = await fetch(dataUrl).then(res => res.arrayBuffer());
+
+        const embeddedSig = await doc.embedPng(sigPngBytes);
+        const targetW = pWidth * sigScaleRatio;
+        const targetH = targetW * (embeddedSig.height / embeddedSig.width);
+        const targetX = pWidth * sigPos.xRatio;
+        // In PDF coordinates, origin (0,0) is BOTTOM-left!
+        const targetY = pHeight - (pHeight * sigPos.yRatio) - targetH;
+
+        page.drawImage(embeddedSig, {
+          x: targetX,
+          y: targetY,
+          width: targetW,
+          height: targetH
+        });
+
+        const outBytes = await doc.save();
+        downloadBlob(new Blob([outBytes], {type:'application/pdf'}), fname+'_signed.pdf');
+        showToast('Signed PDF downloaded');
+      }catch(err){ console.error(err); showToast('Something went wrong stamping signature'); }
+      finally{ btn.disabled=false; btnLabel.textContent='Apply signature & download'; }
+    });
+  })();
+
+  /* =====================================================================
+     6. PAGE NUMBERS (With Live Preview)
+  ===================================================================== */
+  (function(){
+    let sourceBytes=null; let pageCount=0; let fname='document';
+    const dz = document.getElementById('pagenumbers-dropzone');
+    const input = document.getElementById('pagenumbers-input');
+    const bodyEl = document.getElementById('pagenumbers-body');
+    const footer = document.getElementById('pagenumbers-footer');
+    const fnameEl = document.getElementById('pagenumbers-fname');
+    const fsubEl = document.getElementById('pagenumbers-fsub');
+    const btn = document.getElementById('pagenumbers-btn');
+    const btnLabel = document.getElementById('pagenumbers-btn-label');
+    const previewCanvas = document.getElementById('pn-preview-canvas');
+    const previewPageLabel = document.getElementById('pn-preview-page-label');
+
+    const posSelect = document.getElementById('pn-position');
+    const fmtSelect = document.getElementById('pn-format');
+    const fontSelect = document.getElementById('pn-font');
+    const sizeInput = document.getElementById('pn-size');
+    const sizeVal = document.getElementById('pn-size-val');
+    const startInput = document.getElementById('pn-start');
+    const skipFirstInput = document.getElementById('pn-skip-first');
+
+    document.getElementById('pagenumbers-swap').addEventListener('click', ()=> input.click());
+
+    [posSelect, fmtSelect, fontSelect, sizeInput, startInput, skipFirstInput].forEach(el=>{
+      el.addEventListener('input', ()=>{
+        if (sizeVal) sizeVal.textContent = sizeInput.value;
+        renderPnPreview();
+      });
+    });
+
+    wireDropzone(dz, input, files=>{
+      const f = Array.from(files).find(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
+      if (!f){ showToast('Only PDF files are supported'); return; }
+      loadFile(f);
+    });
+
+    async function loadFile(file){
+      try{
+        sourceBytes = await readFileBytes(file);
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        pageCount = doc.getPageCount(); fname = baseName(file.name);
+        fnameEl.textContent = file.name;
+        fsubEl.textContent = pageCount + (pageCount===1?' page · ':' pages · ') + formatSize(file.size);
+        bodyEl.classList.remove('hidden'); footer.classList.remove('hidden'); dz.style.display='none';
+        btn.disabled=false;
+        renderPnPreview();
+      }catch(err){ console.error(err); showToast("Couldn't read this PDF"); }
+    }
+
+    async function renderPnPreview(){
+      if (!sourceBytes) return;
+      try{
+        const skipFirst = skipFirstInput.checked;
+        const pageToShow = (skipFirst && pageCount > 1) ? 2 : 1;
+        previewPageLabel.textContent = 'Page ' + pageToShow;
+
+        const pdf = await pdfjsLib.getDocument({ data: sourceBytes.slice() }).promise;
+        const page = await pdf.getPage(pageToShow);
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = 270 / viewport.width;
+        const scaledViewport = page.getViewport({ scale });
+        previewCanvas.width = scaledViewport.width;
+        previewCanvas.height = scaledViewport.height;
+        const ctx = previewCanvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+
+        if (skipFirst && pageToShow === 1) return; // skipped
+
+        const pos = posSelect.value;
+        const fmt = fmtSelect.value;
+        const start = parseInt(startInput.value||'1', 10);
+        const n = start + (pageToShow - 1);
+        let text = n + '';
+        if (fmt === 'n-of-total') text = n + ' of ' + (start + pageCount - 1);
+        if (fmt === 'page-n') text = 'Page ' + n;
+        if (fmt === 'page-n-of-total') text = 'Page ' + n + ' of ' + (start + pageCount - 1);
+        if (fmt === 'roman') text = toRoman(n);
+
+        const fontSize = parseInt(sizeInput.value, 10) * scale * 1.1;
+        ctx.font = `${fontSize}px ${fontSelect.value}, Inter, sans-serif`;
+        ctx.fillStyle = '#26241F';
+        const tw = ctx.measureText(text).width;
+        const margin = 20 * scale;
+
+        let x = margin, y = margin;
+        if (pos.includes('center')) x = (previewCanvas.width - tw)/2;
+        else if (pos.includes('right')) x = previewCanvas.width - margin - tw;
+
+        if (pos.includes('top')) y = margin + fontSize;
+        else y = previewCanvas.height - margin;
+
+        ctx.fillText(text, x, y);
+      }catch(err){ console.error(err); }
+    }
+
+    btn.addEventListener('click', async ()=>{
+      if (!sourceBytes) return;
+      btn.disabled=true; btnLabel.innerHTML='<span class="spinner"></span> Adding numbers…';
+      try{
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const fontChoice = fontSelect.value;
+        let font = await doc.embedFont(StandardFonts.Helvetica);
+        if (fontChoice === 'TimesRoman') font = await doc.embedFont(StandardFonts.TimesRoman);
+        if (fontChoice === 'Courier') font = await doc.embedFont(StandardFonts.Courier);
+
+        const position = posSelect.value;
+        const format = fmtSelect.value;
+        const start = parseInt(startInput.value||'1',10);
+        const total = doc.getPageCount();
+        const skipFirst = skipFirstInput.checked;
+        const fontSize = parseInt(sizeInput.value, 10);
+        const margin = 26;
+
+        doc.getPages().forEach((page, i)=>{
+          if (skipFirst && i === 0) return;
+          const n = start + (skipFirst ? i - 1 : i);
+          let text = n + '';
+          if (format==='n-of-total') text = n + ' of ' + (start + total - (skipFirst ? 2 : 1));
+          if (format==='page-n') text = 'Page ' + n;
+          if (format==='page-n-of-total') text = 'Page ' + n + ' of ' + (start + total - (skipFirst ? 2 : 1));
+          if (format==='roman') text = toRoman(n);
+
+          const { width, height } = page.getSize();
+          const tw = font.widthOfTextAtSize(text, fontSize);
+          let x, y;
+          if (position.includes('center')) x = width/2 - tw/2;
+          else if (position.includes('right')) x = width - margin - tw;
+          else x = margin;
+          if (position.includes('top')) y = height - margin;
+          else y = margin - fontSize*0.3;
+          page.drawText(text, { x, y, size: fontSize, font, color: rgb(0.15,0.14,0.13) });
+        });
+        const bytes = await doc.save();
+        downloadBlob(new Blob([bytes],{type:'application/pdf'}), fname+'_numbered.pdf');
+        showToast('Page numbers added');
+      }catch(err){ console.error(err); showToast('Something went wrong'); }
+      finally{ btn.disabled=false; btnLabel.textContent='Add numbers & download'; }
+    });
+  })();
+
+  /* =====================================================================
+     7. WATERMARK (With Live Preview)
+  ===================================================================== */
+  (function(){
+    let sourceBytes=null; let fname='document';
+    let wmColor = '#A6321D';
+    const dz = document.getElementById('watermark-dropzone');
+    const input = document.getElementById('watermark-input');
+    const bodyEl = document.getElementById('watermark-body');
+    const footer = document.getElementById('watermark-footer');
+    const fnameEl = document.getElementById('watermark-fname');
+    const fsubEl = document.getElementById('watermark-fsub');
+    const btn = document.getElementById('watermark-btn');
+    const btnLabel = document.getElementById('watermark-btn-label');
+    const previewCanvas = document.getElementById('wm-preview-canvas');
+
+    const textInput = document.getElementById('wm-text');
+    const angleInput = document.getElementById('wm-angle'), angleVal = document.getElementById('wm-angle-val');
+    const opacityInput = document.getElementById('wm-opacity'), opacityVal = document.getElementById('wm-opacity-val');
+    const sizeInput = document.getElementById('wm-size'), sizeVal = document.getElementById('wm-size-val');
+    const patternSelect = document.getElementById('wm-pattern');
+    const skipFirstInput = document.getElementById('wm-skip-first');
+    const customColorInput = document.getElementById('wm-custom-color');
+
+    document.getElementById('watermark-swap').addEventListener('click', ()=> input.click());
+
+    document.querySelectorAll('[data-wmcolor]').forEach(swatch=>{
+      swatch.addEventListener('click', ()=>{
+        document.querySelectorAll('[data-wmcolor]').forEach(s=>s.classList.remove('active'));
+        swatch.classList.add('active');
+        wmColor = swatch.dataset.wmcolor;
+        customColorInput.value = wmColor;
+        renderWmPreview();
+      });
+    });
+    customColorInput.addEventListener('input', ()=>{
+      wmColor = customColorInput.value;
+      renderWmPreview();
+    });
+
+    [textInput, angleInput, opacityInput, sizeInput, patternSelect, skipFirstInput].forEach(el=>{
+      el.addEventListener('input', ()=>{
+        angleVal.textContent = angleInput.value;
+        opacityVal.textContent = opacityInput.value;
+        sizeVal.textContent = sizeInput.value;
+        renderWmPreview();
+      });
+    });
+
+    wireDropzone(dz, input, files=>{
+      const f = Array.from(files).find(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
+      if (!f){ showToast('Only PDF files are supported'); return; }
+      loadFile(f);
+    });
+
+    async function loadFile(file){
+      try{
+        sourceBytes = await readFileBytes(file);
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const count = doc.getPageCount(); fname = baseName(file.name);
+        fnameEl.textContent = file.name;
+        fsubEl.textContent = count + (count===1?' page · ':' pages · ') + formatSize(file.size);
+        bodyEl.classList.remove('hidden'); footer.classList.remove('hidden'); dz.style.display='none';
+        btn.disabled=false;
+        renderWmPreview();
+      }catch(err){ console.error(err); showToast("Couldn't read this PDF"); }
+    }
+
+    async function renderWmPreview(){
+      if (!sourceBytes) return;
+      try{
+        const pdf = await pdfjsLib.getDocument({ data: sourceBytes.slice() }).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = 270 / viewport.width;
+        const scaledViewport = page.getViewport({ scale });
+        previewCanvas.width = scaledViewport.width;
+        previewCanvas.height = scaledViewport.height;
+        const ctx = previewCanvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
+
+        const text = textInput.value.trim() || 'CONFIDENTIAL';
+        const angle = parseInt(angleInput.value, 10);
+        const opacity = parseInt(opacityInput.value, 10)/100;
+        const fontSize = parseInt(sizeInput.value, 10) * scale;
+        const pattern = patternSelect.value;
+
+        ctx.save();
+        ctx.fillStyle = wmColor;
+        ctx.globalAlpha = opacity;
+        ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+        if (pattern === 'tiled'){
+          const stepX = 140 * scale; const stepY = 120 * scale;
+          for (let x = -50; x < previewCanvas.width + 100; x += stepX){
+            for (let y = -50; y < previewCanvas.height + 100; y += stepY){
+              ctx.save();
+              ctx.translate(x, y);
+              ctx.rotate(angle * Math.PI / 180);
+              ctx.fillText(text, 0, 0);
+              ctx.restore();
+            }
+          }
+        } else {
+          ctx.translate(previewCanvas.width / 2, previewCanvas.height / 2);
+          ctx.rotate(angle * Math.PI / 180);
+          ctx.fillText(text, 0, 0);
+        }
+        ctx.restore();
+      }catch(err){ console.error(err); }
+    }
+
+    btn.addEventListener('click', async ()=>{
+      if (!sourceBytes) return;
+      const text = textInput.value.trim() || 'CONFIDENTIAL';
+      const angle = parseInt(angleInput.value, 10);
+      const opacity = parseInt(opacityInput.value, 10)/100;
+      const fontSize = parseInt(sizeInput.value, 10);
+      const pattern = patternSelect.value;
+      const skipFirst = skipFirstInput.checked;
+      const clr = hexToRgb(wmColor);
+
+      btn.disabled=true; btnLabel.innerHTML='<span class="spinner"></span> Adding watermark…';
+      try{
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const font = await doc.embedFont(StandardFonts.HelveticaBold);
+        const rad = angle * Math.PI / 180;
+
+        doc.getPages().forEach((page, i)=>{
+          if (skipFirst && i === 0) return;
+          const { width, height } = page.getSize();
+          const tw = font.widthOfTextAtSize(text, fontSize);
+
+          if (pattern === 'tiled'){
+            const stepX = Math.max(tw + 80, 220);
+            const stepY = 180;
+            for (let x = -100; x < width + 150; x += stepX){
+              for (let y = -100; y < height + 150; y += stepY){
+                page.drawText(text, {
+                  x: x - (tw/2)*Math.cos(rad) + (fontSize/3)*Math.sin(rad),
+                  y: y - (tw/2)*Math.sin(rad) - (fontSize/3)*Math.cos(rad),
+                  size: fontSize * 0.7, font, color: clr, opacity, rotate: degrees(angle)
+                });
+              }
+            }
+          } else {
+            page.drawText(text, {
+              x: width/2 - (tw/2)*Math.cos(rad) + (fontSize/3)*Math.sin(rad),
+              y: height/2 - (tw/2)*Math.sin(rad) - (fontSize/3)*Math.cos(rad),
+              size: fontSize, font, color: clr, opacity, rotate: degrees(angle)
+            });
+          }
+        });
+        const bytes = await doc.save();
+        downloadBlob(new Blob([bytes],{type:'application/pdf'}), fname+'_watermarked.pdf');
+        showToast('Watermark added');
+      }catch(err){ console.error(err); showToast('Something went wrong'); }
+      finally{ btn.disabled=false; btnLabel.textContent='Add watermark & download'; }
+    });
+  })();
+
+  /* =====================================================================
+     8. PDF METADATA & PRIVACY
+  ===================================================================== */
+  (function(){
+    let sourceBytes = null; let fname = 'document';
+    const dz = document.getElementById('metadata-dropzone');
+    const input = document.getElementById('metadata-input');
+    const bodyEl = document.getElementById('metadata-body');
+    const footer = document.getElementById('metadata-footer');
+    const fnameEl = document.getElementById('metadata-fname');
+    const fsubEl = document.getElementById('metadata-fsub');
+    const btn = document.getElementById('metadata-btn');
+    const btnLabel = document.getElementById('metadata-btn-label');
+
+    const titleIn = document.getElementById('meta-title');
+    const authorIn = document.getElementById('meta-author');
+    const subjectIn = document.getElementById('meta-subject');
+    const keywordsIn = document.getElementById('meta-keywords');
+    const creatorIn = document.getElementById('meta-creator');
+    const producerIn = document.getElementById('meta-producer');
+
+    document.getElementById('metadata-swap').addEventListener('click', ()=> input.click());
+    document.getElementById('meta-sanitize-btn').addEventListener('click', ()=>{
+      titleIn.value = '';
+      authorIn.value = '';
+      subjectIn.value = '';
+      keywordsIn.value = '';
+      creatorIn.value = '';
+      producerIn.value = '';
+      showToast('All metadata wiped from fields');
+    });
+
+    wireDropzone(dz, input, files=>{
+      const f = Array.from(files).find(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
+      if (!f){ showToast('Only PDF files are supported'); return; }
+      loadFile(f);
+    });
+
+    async function loadFile(file){
+      try{
+        sourceBytes = await readFileBytes(file);
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const count = doc.getPageCount(); fname = baseName(file.name);
+        fnameEl.textContent = file.name;
+        fsubEl.textContent = count + (count===1?' page · ':' pages · ') + formatSize(file.size);
+
+        titleIn.value = doc.getTitle() || '';
+        authorIn.value = doc.getAuthor() || '';
+        subjectIn.value = doc.getSubject() || '';
+        const kws = doc.getKeywords();
+        keywordsIn.value = Array.isArray(kws) ? kws.join(', ') : (kws || '');
+        creatorIn.value = doc.getCreator() || '';
+        producerIn.value = doc.getProducer() || '';
+
+        bodyEl.classList.remove('hidden'); footer.classList.remove('hidden'); dz.style.display='none';
+        btn.disabled=false;
+      }catch(err){ console.error(err); showToast("Couldn't read this PDF"); }
+    }
+
+    btn.addEventListener('click', async ()=>{
+      if (!sourceBytes) return;
+      btn.disabled=true; btnLabel.innerHTML='<span class="spinner"></span> Saving…';
+      try{
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        doc.setTitle(titleIn.value.trim());
+        doc.setAuthor(authorIn.value.trim());
+        doc.setSubject(subjectIn.value.trim());
+        const kws = keywordsIn.value.split(',').map(s=>s.trim()).filter(Boolean);
+        doc.setKeywords(kws);
+        doc.setCreator(creatorIn.value.trim());
+        doc.setProducer(producerIn.value.trim());
+
+        const bytes = await doc.save();
+        downloadBlob(new Blob([bytes],{type:'application/pdf'}), fname+'_meta.pdf');
+        showToast('Updated PDF downloaded');
+      }catch(err){ console.error(err); showToast('Something went wrong'); }
+      finally{ btn.disabled=false; btnLabel.textContent='Save & download PDF'; }
+    });
+  })();
+
+  /* =====================================================================
+     9. PDF TO IMAGES
+  ===================================================================== */
+  (function(){
+    let pages=[]; let sourceBytes=null; let fname='pages';
+    const dz = document.getElementById('pdf2img-dropzone');
+    const input = document.getElementById('pdf2img-input');
+    const bodyEl = document.getElementById('pdf2img-body');
+    const gridEl = document.getElementById('pdf2img-grid');
+    const footer = document.getElementById('pdf2img-footer');
+    const countEl = document.getElementById('pdf2img-count');
+    const selCountEl = document.getElementById('pdf2img-selected-count');
+    const btn = document.getElementById('pdf2img-btn');
+    const btnLabel = document.getElementById('pdf2img-btn-label');
+
+    document.getElementById('pdf2img-swap').addEventListener('click', ()=> input.click());
+    document.getElementById('pdf2img-all').addEventListener('click', ()=>{ pages.forEach(p=>p.selected=true); render(); });
+    document.getElementById('pdf2img-none').addEventListener('click', ()=>{ pages.forEach(p=>p.selected=false); render(); });
+
+    wireDropzone(dz, input, files=>{
+      const f = Array.from(files).find(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
+      if (!f){ showToast('Only PDF files are supported'); return; }
+      loadFile(f);
+    });
+
+    async function loadFile(file){
+      pages=[]; fname = baseName(file.name); render();
+      try{
+        sourceBytes = await readFileBytes(file);
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const count = doc.getPageCount();
+        for (let i=0;i<count;i++){ pages.push({ index:i, selected:true, thumbUrl:null, loading:true }); }
+        render();
+        for (const p of pages){ p.thumbUrl = await renderThumb(sourceBytes, p.index, 200); p.loading=false; render(); }
+      }catch(err){ console.error(err); showToast("Couldn't read this PDF"); }
+    }
+
+    function render(){
+      const has = pages.length>0;
+      bodyEl.classList.toggle('hidden', !has);
+      footer.classList.toggle('hidden', !has);
+      dz.style.display = has ? 'none' : 'flex';
+      const selected = pages.filter(p=>p.selected);
+      countEl.textContent = selected.length + ' of ' + pages.length + ' selected';
+      selCountEl.textContent = selected.length;
+      btn.disabled = selected.length===0 || pages.some(p=>p.loading);
+      gridEl.innerHTML='';
+      pages.forEach(p=>{
+        const card = document.createElement('div'); card.className='card'+(p.selected?' selected':'');
+        const thumb = document.createElement('div'); thumb.className='thumb';
+        if (p.loading) thumb.innerHTML = '<div class="spinner"></div>';
+        else {
+          const img = document.createElement('img'); img.src=p.thumbUrl; thumb.appendChild(img);
+          const badge = document.createElement('div'); badge.className='order-badge'; badge.textContent = p.index+1; thumb.appendChild(badge);
+          const check = document.createElement('div'); check.className='check-overlay';
+          check.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+          thumb.appendChild(check);
+        }
+        card.appendChild(thumb);
+        card.addEventListener('click', ()=>{ if(!p.loading){ p.selected=!p.selected; render(); } });
+        gridEl.appendChild(card);
+      });
+    }
+
+    btn.addEventListener('click', async ()=>{
+      const selected = pages.filter(p=>p.selected);
+      if (selected.length===0) return;
+      const format = document.getElementById('pdf2img-format').value;
+      const scale = parseFloat(document.getElementById('pdf2img-scale').value);
+      let ext = 'png';
+      if (format === 'image/jpeg') ext = 'jpg';
+      if (format === 'image/webp') ext = 'webp';
+
+      btn.disabled=true; btnLabel.innerHTML='<span class="spinner"></span> Rendering…';
+      try{
+        const pdf = await pdfjsLib.getDocument({ data: sourceBytes.slice() }).promise;
+        if (selected.length===1){
+          const p = selected[0];
+          const page = await pdf.getPage(p.index+1);
+          const viewport = page.getViewport({ scale });
+          const canvas = document.createElement('canvas'); canvas.width=viewport.width; canvas.height=viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          const blob = await new Promise(res=> canvas.toBlob(res, format, 0.92));
+          downloadBlob(blob, fname+'_page'+(p.index+1)+'.'+ext);
+        } else {
+          const zip = new JSZip();
+          for (const p of selected){
+            const page = await pdf.getPage(p.index+1);
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas'); canvas.width=viewport.width; canvas.height=viewport.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            const blob = await new Promise(res=> canvas.toBlob(res, format, 0.92));
+            zip.file(fname+'_page'+(p.index+1)+'.'+ext, blob);
+          }
+          const blob = await zip.generateAsync({type:'blob'});
+          downloadBlob(blob, fname+'_images.zip');
+        }
+        showToast('Images downloaded');
+      }catch(err){ console.error(err); showToast('Something went wrong'); }
+      finally{ btn.disabled=false; btnLabel.textContent='Download images'; }
+    });
+  })();
+
+  /* =====================================================================
+     10. IMAGES TO PDF (With Standard Sizing & Formats)
+  ===================================================================== */
+  (function(){
+    let items=[]; let idc=0;
+    const dz = document.getElementById('img2pdf-dropzone');
+    const input = document.getElementById('img2pdf-input');
+    const wrapEl = document.getElementById('img2pdf-grid-wrap');
+    const gridEl = document.getElementById('img2pdf-grid');
+    const footer = document.getElementById('img2pdf-footer');
+    const countEl = document.getElementById('img2pdf-count');
+    const totalEl = document.getElementById('img2pdf-total');
+    const btn = document.getElementById('img2pdf-btn');
+    const btnLabel = document.getElementById('img2pdf-btn-label');
+
+    const pageSizeSelect = document.getElementById('img2pdf-page-size');
+    const orientSelect = document.getElementById('img2pdf-orientation');
+    const marginSelect = document.getElementById('img2pdf-margin');
+
+    document.getElementById('img2pdf-clear').addEventListener('click', ()=>{ items=[]; render(); });
+
+    wireDropzone(dz, input, files=>{
+      const imgs = Array.from(files).filter(f=>/^image\/(png|jpeg|webp|gif)$/.test(f.type) || /\.(png|jpe?g|webp|gif)$/i.test(f.name));
+      if (imgs.length===0){ showToast('Supported formats: PNG, JPG, WebP, GIF'); return; }
+      imgs.forEach(addFile);
+    });
+
+    async function addFile(file){
+      const id='i'+(++idc);
+      const entry = { id, name:file.name, size:file.size, type:file.type, bytes:null, url:null, status:'loading' };
+      items.push(entry); render();
+      try{
+        entry.bytes = await readFileBytes(file);
+        entry.url = URL.createObjectURL(new Blob([entry.bytes], {type:file.type || 'image/png'}));
+        entry.status = 'ready';
+      }catch(err){ console.error(err); entry.status='error'; }
+      render();
+    }
+
+    function render(){
+      const has = items.length>0;
+      wrapEl.classList.toggle('hidden', !has);
+      footer.classList.toggle('hidden', !has);
+      dz.style.display = has ? 'none' : 'flex';
+      countEl.textContent = items.length + (items.length===1?' image':' images');
+      const ready = items.filter(i=>i.status==='ready');
+      totalEl.textContent = ready.length;
+      btn.disabled = items.some(i=>i.status==='loading') || ready.length===0;
+
+      gridEl.innerHTML='';
+      items.forEach((item, idx)=>{
+        const card = document.createElement('div'); card.className='card draggable'; card.draggable = item.status!=='loading';
+        const thumb = document.createElement('div'); thumb.className='thumb';
+        if (item.status==='loading') thumb.innerHTML = '<div class="spinner"></div>';
+        else if (item.status==='error') thumb.innerHTML = '<svg class="err-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+        else {
+          const img = document.createElement('img'); img.src=item.url; thumb.appendChild(img);
+          const badge = document.createElement('div'); badge.className='order-badge'; badge.textContent = idx+1; thumb.appendChild(badge);
+        }
+        card.appendChild(thumb);
+
+        const actionsTop = document.createElement('div'); actionsTop.className = 'card-actions-top';
+        const rm = document.createElement('button'); rm.className='card-action-btn danger'; rm.title = 'Remove';
+        rm.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        rm.addEventListener('click', e=>{ e.stopPropagation(); items = items.filter(i=>i.id!==item.id); render(); });
+        actionsTop.appendChild(rm);
+        card.appendChild(actionsTop);
+
+        const actionsBottom = document.createElement('div'); actionsBottom.className = 'card-actions-bottom';
+        const navBtns = document.createElement('div'); navBtns.className = 'card-nav-btns';
+        if (idx > 0){
+          const leftBtn = document.createElement('button'); leftBtn.className = 'card-action-btn'; leftBtn.title = 'Move left';
+          leftBtn.innerHTML = '&larr;';
+          leftBtn.addEventListener('click', e=>{ e.stopPropagation(); [items[idx-1], items[idx]] = [items[idx], items[idx-1]]; render(); });
+          navBtns.appendChild(leftBtn);
+        }
+        if (idx < items.length - 1){
+          const rightBtn = document.createElement('button'); rightBtn.className = 'card-action-btn'; rightBtn.title = 'Move right';
+          rightBtn.innerHTML = '&rarr;';
+          rightBtn.addEventListener('click', e=>{ e.stopPropagation(); [items[idx+1], items[idx]] = [items[idx], items[idx+1]]; render(); });
+          navBtns.appendChild(rightBtn);
+        }
+        actionsBottom.appendChild(navBtns);
+        card.appendChild(actionsBottom);
+
+        const meta = document.createElement('div'); meta.className='card-meta';
+        const nm = document.createElement('p'); nm.className='card-name'; nm.textContent=item.name; nm.title=item.name; meta.appendChild(nm);
+        const sub = document.createElement('p'); sub.className='card-sub'; sub.textContent = formatSize(item.size);
+        meta.appendChild(sub); card.appendChild(meta);
+        wireCardDrag(card, item, items, render);
+        gridEl.appendChild(card);
+      });
+
+      const addTile = document.createElement('button'); addTile.className='add-tile'; addTile.type='button';
+      addTile.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Add images</span>';
+      addTile.addEventListener('click', ()=> input.click());
+      gridEl.appendChild(addTile);
+    }
+
+    btn.addEventListener('click', async ()=>{
+      const ready = items.filter(i=>i.status==='ready');
+      if (ready.length===0) return;
+      btn.disabled=true; btnLabel.innerHTML='<span class="spinner"></span> Creating…';
+      try{
+        const doc = await PDFDocument.create();
+        const pageSizeOpt = pageSizeSelect.value;
+        const orientOpt = orientSelect.value;
+        const margin = parseInt(marginSelect.value, 10);
+
+        for (const item of ready){
+          // Convert image to PNG via canvas if WebP/GIF or if embedding requires standardization
+          let pngBytes = item.bytes;
+          if (item.type !== 'image/png' && item.type !== 'image/jpeg'){
+            const img = new Image();
+            await new Promise((res, rej)=>{ img.onload=res; img.onerror=rej; img.src = item.url; });
+            const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+            c.getContext('2d').drawImage(img, 0, 0);
+            const dataUrl = c.toDataURL('image/png');
+            pngBytes = new Uint8Array(await fetch(dataUrl).then(r=>r.arrayBuffer()));
+          }
+
+          const embedded = item.type === 'image/jpeg' ? await doc.embedJpg(item.bytes.slice()) : await doc.embedPng(pngBytes.slice());
+          let imgW = embedded.width; let imgH = embedded.height;
+
+          let pW = imgW, pH = imgH;
+          if (pageSizeOpt === 'a4') { pW = 595.28; pH = 841.89; }
+          else if (pageSizeOpt === 'letter') { pW = 612; pH = 792; }
+
+          if (pageSizeOpt !== 'fit'){
+            const isLandscape = orientOpt === 'landscape' || (orientOpt === 'auto' && imgW > imgH);
+            if (isLandscape && pW < pH) [pW, pH] = [pH, pW];
+            if (!isLandscape && pW > pH) [pW, pH] = [pH, pW];
+
+            const availW = pW - (margin * 2);
+            const availH = pH - (margin * 2);
+            const scale = Math.min(availW / imgW, availH / imgH);
+            imgW *= scale; imgH *= scale;
+            const x = margin + (availW - imgW) / 2;
+            const y = margin + (availH - imgH) / 2;
+            const page = doc.addPage([pW, pH]);
+            page.drawImage(embedded, { x, y, width: imgW, height: imgH });
+          } else {
+            const page = doc.addPage([imgW, imgH]);
+            page.drawImage(embedded, { x: 0, y: 0, width: imgW, height: imgH });
+          }
+        }
+        const bytes = await doc.save();
+        downloadBlob(new Blob([bytes],{type:'application/pdf'}), 'images.pdf');
+        showToast('PDF created');
+      }catch(err){ console.error(err); showToast('Something went wrong creating PDF'); }
+      finally{ btn.disabled=false; btnLabel.textContent='Create PDF'; }
+    });
+  })();
+
+  /* =====================================================================
+     11. PDF TO TEXT (With In-Browser Rich Preview & Search)
+  ===================================================================== */
+  (function(){
+    let sourceBytes=null; let fname='document';
+    let extractedPages = []; // [{ page: 1, text: '' }]
+    const dz = document.getElementById('pdf2text-dropzone');
+    const input = document.getElementById('pdf2text-input');
+    const bodyEl = document.getElementById('pdf2text-body');
+    const footer = document.getElementById('pdf2text-footer');
+    const fnameEl = document.getElementById('pdf2text-fname');
+    const fsubEl = document.getElementById('pdf2text-fsub');
+    const btn = document.getElementById('pdf2text-btn');
+    const btnLabel = document.getElementById('pdf2text-btn-label');
+    const displayEl = document.getElementById('pdf2text-display');
+    const statsEl = document.getElementById('pdf2text-stats');
+    const searchInput = document.getElementById('pdf2text-search');
+    const copyBtn = document.getElementById('pdf2text-copy-btn');
+
+    document.getElementById('pdf2text-swap').addEventListener('click', ()=> input.click());
+
+    copyBtn.addEventListener('click', ()=>{
+      const fullText = extractedPages.map(p=>`--- Page ${p.page} ---\n${p.text}`).join('\n\n');
+      navigator.clipboard.writeText(fullText).then(()=>{
+        showToast('Text copied to clipboard');
+      }).catch(()=>{ showToast('Could not copy text'); });
+    });
+
+    searchInput.addEventListener('input', renderTextDisplay);
+
+    wireDropzone(dz, input, files=>{
+      const f = Array.from(files).find(f=>f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'));
+      if (!f){ showToast('Only PDF files are supported'); return; }
+      loadFile(f);
+    });
+
+    async function loadFile(file){
+      try{
+        sourceBytes = await readFileBytes(file);
+        const doc = await PDFDocument.load(sourceBytes.slice(), { ignoreEncryption:true });
+        const count = doc.getPageCount(); fname = baseName(file.name);
+        fnameEl.textContent = file.name;
+        fsubEl.textContent = count + (count===1?' page · ':' pages · ') + formatSize(file.size);
+        bodyEl.classList.remove('hidden'); footer.classList.remove('hidden'); dz.style.display='none';
+        btn.disabled=true;
+        statsEl.textContent = 'Extracting text…';
+
+        const pdf = await pdfjsLib.getDocument({ data: sourceBytes.slice() }).promise;
+        extractedPages = [];
+        let totalWords = 0; let totalChars = 0;
+
+        for (let i=1; i<=pdf.numPages; i++){
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = content.items.map(it=>it.str).join(' ');
+          extractedPages.push({ page: i, text: pageText });
+          totalWords += pageText.split(/\s+/).filter(Boolean).length;
+          totalChars += pageText.length;
+        }
+
+        statsEl.innerHTML = `<b>${extractedPages.length}</b> pages &middot; <b>${totalWords.toLocaleString()}</b> words &middot; <b>${totalChars.toLocaleString()}</b> characters`;
+        btn.disabled=false;
+        renderTextDisplay();
+      }catch(err){ console.error(err); showToast("Couldn't read this PDF"); }
+    }
+
+    function renderTextDisplay(){
+      const query = searchInput.value.trim().toLowerCase();
+      displayEl.innerHTML = '';
+      extractedPages.forEach(p=>{
+        const div = document.createElement('div');
+        const header = document.createElement('span');
+        header.className = 'text-page-divider';
+        header.textContent = `--- Page ${p.page} ---`;
+        div.appendChild(header);
+
+        const content = document.createElement('div');
+        if (query){
+          const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+          content.innerHTML = p.text.replace(regex, '<mark style="background:#FFE600; color:#000;">$1</mark>');
+        } else {
+          content.textContent = p.text || '(No readable text found on this page)';
+        }
+        div.appendChild(content);
+        displayEl.appendChild(div);
+      });
+    }
+
+    btn.addEventListener('click', ()=>{
+      if (extractedPages.length === 0) return;
+      const fullText = extractedPages.map(p=>`--- Page ${p.page} ---\n${p.text}`).join('\n\n');
+      downloadBlob(new Blob([fullText], {type:'text/plain'}), fname+'.txt');
+      showToast('Text file downloaded');
+    });
+  })();
+
+})();
+</script>
+
+</body>
+</html>
